@@ -99,8 +99,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-6 bg-blue-600 text-white">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-lg">E</span>
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <img
+                src="/src/assets/Logo.png"
+                alt="EduTrack Logo"
+                className="w-7 h-7 rounded-full object-contain"
+              />
             </div>
             <span className="text-xl font-bold">EduTrack</span>
           </div>
