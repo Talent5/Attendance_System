@@ -4,6 +4,12 @@ A comprehensive school attendance management system built with modern web techno
 
 ## 🏗️ System Architecture
 
+The system follows a modular client-server architecture, consisting of:
+
+•	Frontend (User Interface) - Web-based admin dashboard for staff to view, manage, and generate reports; mobile app for scanning QR codes.
+•	Backend (Business Logic & Database Interaction) - Handles data processing, communication, and attendance logic.
+•	Database - Stores student records, attendance logs, and contact information.
+
 ```
 ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
 │                     │    │                     │    │                     │
