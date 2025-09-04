@@ -1,0 +1,116 @@
+/* Admin Dashboard Root Styles */
+#root {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Professional ID Card Templates */
+.id-card-professional-blue {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%) !important;
+}
+
+.id-card-professional-green {
+  background: linear-gradient(135deg, #065f46 0%, #059669 50%, #34d399 100%) !important;
+}
+
+.id-card-professional-purple {
+  background: linear-gradient(135deg, #581c87 0%, #7c3aed 50%, #a78bfa 100%) !important;
+}
+
+.id-card-classic-white {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 2px solid #e5e7eb !important;
+}
+
+.id-card-modern-red {
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #f87171 100%) !important;
+}
+
+.id-card-elegant-gold {
+  background: linear-gradient(135deg, #92400e 0%, #d97706 50%, #fbbf24 100%) !important;
+}
+
+  @media print {
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }  .print-container {
+    width: 54mm !important;
+    height: 86mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page-break-after: always;
+    display: block !important;
+    overflow: hidden;
+  }
+  
+  .id-card {
+    width: 54mm !important;
+    height: 86mm !important;
+    margin: 0 !important;
+    padding: 8px !important;
+    border-radius: 8px !important;
+    transform: scale(1) !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  
+  /* Hide everything except the print container */
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-container,
+  .print-container * {
+    visibility: visible;
+  }
+  
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}

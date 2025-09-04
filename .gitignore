@@ -1,0 +1,78 @@
+# .gitignore for Attendance_QR_System
+# Ignore node_modules for all JS/Node projects
+node_modules/
+**/node_modules/
+
+# Ignore environment variable files
+.env
+**/.env*
+
+# Ignore log files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore build output
+/dist/
+/build/
+**/dist/
+**/build/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Ignore coverage reports
+coverage/
+**/coverage/
+
+# Ignore local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore misc
+*.tgz
+*.tar.gz
+*.zip
+
+# Ignore by package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Ignore test output
+/test-output/
+
+# Ignore backup files
+*~
+*.bak
+*.tmp
+
+# Ignore Python cache (if any Python scripts are present)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore Expo/React Native files (for attendance-scanner)
+.expo/
+.expo-shared/
+
+# Ignore next.js build output (if used)
+.next/
+
+# Ignore Vite cache
+.vite/
