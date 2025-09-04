@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/Logo.png';
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -54,7 +55,7 @@ const Layout = ({ children }) => {
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center mr-3">
                     <img
-                      src="/src/assets/Logo.png"
+                      src={logo}
                       alt="EduTrack Logo"
                       className="w-7 h-7 rounded-full object-contain"
                     />

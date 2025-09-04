@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-hot-toast';
 import html2canvas from 'html2canvas';
+import logo from '../assets/Logo.png';
 
 const IDCardGenerator = () => {
   const [students, setStudents] = useState([]);
@@ -927,7 +928,7 @@ const IDCardGenerator = () => {
                         }}
                       >
                         <img
-                          src="/src/assets/Logo.png"
+                          src={logo}
                           alt="School Logo"
                           className="w-10 h-10 rounded-full object-contain"
                         />
@@ -1230,7 +1231,7 @@ const IDCardGenerator = () => {
                         }}
                       >
                         <img
-                          src="/src/assets/Logo.png"
+                          src={logo}
                           alt="School Logo"
                           className="w-4 h-4 rounded-full object-contain"
                         />

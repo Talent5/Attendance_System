@@ -28,30 +28,20 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    // Define allowed origins
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://attendance-system-blue.vercel.app',
-      '*.vercel.app'
-    ];
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, origin);
-    }
-    
-    // Allow Vercel domains
+
+    // Allow localhost for development
+    if (origin.includes('localhost')) return callback(null, true);
+
+    // Allow ALL Vercel domains (*.vercel.app)
     if (origin && origin.endsWith('.vercel.app')) {
-      return callback(null, origin);
+      return callback(null, true);
     }
-    
+
     // Allow specific frontend URL from environment
     if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
-      return callback(null, process.env.FRONTEND_URL);
+      return callback(null, true);
     }
-    
+
     // Reject other origins
     return callback(new Error('Not allowed by CORS'));
   },

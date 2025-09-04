@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/Logo.png';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
@@ -101,7 +102,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
               <img
-                src="/src/assets/Logo.png"
+                src={logo}
                 alt="EduTrack Logo"
                 className="w-7 h-7 rounded-full object-contain"
               />

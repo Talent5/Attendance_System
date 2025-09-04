@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import logo from '../assets/Logo.png';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
@@ -9,6 +10,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -34,10 +36,6 @@ const Login = () => {
     }
   };
 
-  const fillDemoCredentials = (email, password) => {
-    setCredentials({ email, password });
-  };
-
   const handleChange = (e) => {
     setCredentials({
       ...credentials,
@@ -51,7 +49,7 @@ const Login = () => {
         <div className="text-center">
           <div className="mx-auto h-12 w-12 bg-white rounded-full flex items-center justify-center mb-6">
             <img
-              src="/src/assets/Logo.png"
+              src={logo}
               alt="EduTrack Logo"
               className="h-10 w-10 rounded-full object-contain"
             />
@@ -65,38 +63,6 @@ const Login = () => {
         </div>
         
         <div className="bg-white rounded-xl shadow-2xl p-8 space-y-6">
-          {/* Demo Credentials */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-              </svg>
-              Demo Credentials - Click to Auto-Fill
-            </h3>
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials('admin@school.com', 'admin123')}
-                className="w-full text-left px-3 py-2 text-xs bg-white border border-blue-200 rounded hover:bg-blue-50 transition-colors flex items-center justify-between"
-              >
-                <span><strong>Admin:</strong> admin@school.com / admin123</span>
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials('teacher@school.com', 'teacher123')}
-                className="w-full text-left px-3 py-2 text-xs bg-white border border-blue-200 rounded hover:bg-blue-50 transition-colors flex items-center justify-between"
-              >
-                <span><strong>Teacher:</strong> teacher@school.com / teacher123</span>
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
@@ -129,16 +95,34 @@ const Login = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Enter your password"
-                  value={credentials.password}
-                  onChange={handleChange}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="w-full px-3 py-3 pr-10 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="Enter your password"
+                    value={credentials.password}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
