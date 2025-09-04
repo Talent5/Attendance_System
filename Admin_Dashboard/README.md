@@ -49,7 +49,7 @@ The application includes a demo mode that works without a backend. Demo credenti
 
 ## Backend Integration
 
-To connect to a real backend, set `USE_DEMO_MODE = false` in service files and ensure backend runs on `http://localhost:5000`.+ Vite
+To connect to a real backend, set `USE_DEMO_MODE = false` in service files and ensure backend is hosted at `https://attendance-system-sktv.onrender.com`.+ Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

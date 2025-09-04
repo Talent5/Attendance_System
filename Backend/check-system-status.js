@@ -4,7 +4,7 @@ const axios = require('axios');
 async function checkSystemStatus() {
   console.log('🔍 Checking QR Attendance System Status...\n');
 
-  const baseURL = 'http://localhost:5000/api';
+  const baseURL = 'https://attendance-system-sktv.onrender.com/api';
   const testResults = {
     backend: false,
     auth: false,
@@ -104,8 +104,8 @@ async function checkSystemStatus() {
   if (allWorking) {
     console.log('\n🎉 ALL SYSTEMS OPERATIONAL!');
     console.log('🚀 Your QR Attendance System with Absentee Notifications is ready!');
-    console.log('\n📱 Frontend: http://localhost:3000');
-    console.log('🔧 Backend: http://localhost:5000');
+    console.log('\n📱 Frontend: https://your-frontend-url.com'); // Update with actual frontend URL
+    console.log('🔧 Backend: https://attendance-system-sktv.onrender.com');
     console.log('\n⏰ Automated notifications will run daily at 9:30 AM (weekdays)');
   } else {
     console.log('\n⚠️ Some systems need attention. Check the individual status above.');

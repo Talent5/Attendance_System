@@ -27,7 +27,8 @@
       "edgeToEdgeEnabled": true,
       "package": "com.yourcompany.attendancescanner",
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -40,6 +41,11 @@
           "cameraPermission": "Allow Attendance Scanner to access camera for QR code scanning."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c4ba4dae-22c2-480a-b741-3a3da7f13561"
+      }
+    }
   }
 }

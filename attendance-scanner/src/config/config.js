@@ -4,7 +4,7 @@ const config = {
   // Change this to match your backend server
   API_BASE_URL: __DEV__ 
     ? 'http://192.168.0.49:5000' // Development - backend server running on port 5000
-    : 'https://your-production-backend-url.com', // Production
+    : 'https://attendance-system-sktv.onrender.com', // Production
   
   // API timeout in milliseconds
   API_TIMEOUT: 15000,
