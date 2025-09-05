@@ -20,14 +20,29 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Handle auth errors and rate limiting
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    // Handle rate limiting
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      if (retryAfter) {
+        error.retryAfter = parseInt(retryAfter);
+      }
+      return Promise.reject(error);
     }
+    
+    // Handle auth errors
+    if (error.response?.status === 401) {
+      // Don't redirect on login page
+      if (!window.location.pathname.includes('/login')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

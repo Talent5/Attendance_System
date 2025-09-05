@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/Logo.png';
@@ -11,6 +11,26 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [retryAfter, setRetryAfter] = useState(0);
+
+  // Countdown timer for rate limit
+  useEffect(() => {
+    let interval;
+    if (retryAfter > 0) {
+      interval = setInterval(() => {
+        setRetryAfter((prev) => {
+          if (prev <= 1) {
+            setIsRateLimited(false);
+            setError('');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [retryAfter]);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -19,6 +39,7 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setIsRateLimited(false);
 
     try {
       const result = await login(credentials);
@@ -27,6 +48,11 @@ const Login = () => {
         navigate('/dashboard');
       } else {
         setError(result.message || 'Login failed');
+        if (result.isRateLimited) {
+          setIsRateLimited(true);
+          // Set retry countdown (default to 15 minutes if not provided)
+          setRetryAfter(result.retryAfter || 900);
+        }
       }
     } catch (err) {
       console.error('Login failed:', err);
@@ -65,12 +91,35 @@ const Login = () => {
         <div className="bg-white rounded-xl shadow-2xl p-8 space-y-6">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+              <div className={`border px-4 py-3 rounded-lg ${
+                isRateLimited 
+                  ? 'bg-yellow-50 border-yellow-200 text-yellow-800' 
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}>
                 <div className="flex">
-                  <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
-                  </svg>
-                  {error}
+                  {isRateLimited ? (
+                    <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/>
+                    </svg>
+                  )}
+                  <div>
+                    <p className="font-medium">{error}</p>
+                    {isRateLimited && (
+                      <div className="text-sm mt-2">
+                        <p>For security, login attempts are limited to 5 per 15 minutes.</p>
+                        {retryAfter > 0 && (
+                          <p className="font-medium mt-1">
+                            You can try again in: {Math.floor(retryAfter / 60)}:{(retryAfter % 60).toString().padStart(2, '0')} minutes
+                          </p>
+                        )}
+                        <p className="mt-1">Contact support if you need immediate access.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -128,7 +177,7 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isRateLimited}
               className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
               {loading ? (
@@ -139,6 +188,8 @@ const Login = () => {
                   </svg>
                   Signing in...
                 </>
+              ) : isRateLimited ? (
+                `Try again in ${Math.floor(retryAfter / 60)}:${(retryAfter % 60).toString().padStart(2, '0')}`
               ) : (
                 'Sign in to Dashboard'
               )}

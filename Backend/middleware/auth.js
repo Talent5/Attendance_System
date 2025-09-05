@@ -182,7 +182,7 @@ const addUserToLogs = (req, res, next) => {
 // Rate limiting for authentication attempts
 const authRateLimit = require('express-rate-limit')({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
+  max: process.env.NODE_ENV === 'development' ? 20 : 5, // More attempts in development
   message: {
     success: false,
     error: { message: 'Too many login attempts, please try again later' }
@@ -193,9 +193,19 @@ const authRateLimit = require('express-rate-limit')({
     logger.warn(`Rate limit exceeded for auth attempts from IP: ${req.ip}`);
     res.status(429).json({
       success: false,
-      error: { message: 'Too many login attempts, please try again later' }
+      error: { 
+        message: 'Too many login attempts, please try again later',
+        retryAfter: Math.ceil(req.rateLimit.resetTime / 1000),
+        remainingAttempts: 0
+      }
     });
-  }
+  },
+  // Add headers to show rate limit status
+  onLimitReached: (req, res) => {
+    logger.warn(`Rate limit reached for IP: ${req.ip}`);
+  },
+  // Skip successful requests from counting against the limit
+  skipSuccessfulRequests: true
 });
 
 module.exports = {
