@@ -20,19 +20,10 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors and rate limiting
+// Handle auth errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle rate limiting
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after'];
-      if (retryAfter) {
-        error.retryAfter = parseInt(retryAfter);
-      }
-      return Promise.reject(error);
-    }
-    
     // Handle auth errors
     if (error.response?.status === 401) {
       // Don't redirect on login page

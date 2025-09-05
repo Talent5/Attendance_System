@@ -5,7 +5,6 @@ const AuthService = require('../services/authService');
 const { 
   validate, 
   schemas, 
-  authRateLimit,
   authenticate 
 } = require('../middleware');
 const logger = require('../utils/logger');
@@ -14,7 +13,6 @@ const logger = require('../utils/logger');
 // @desc    Authenticate user and get token
 // @access  Public
 router.post('/login', 
-  authRateLimit,
   validate(schemas.userLogin),
   async (req, res, next) => {
     try {

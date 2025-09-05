@@ -28,17 +28,6 @@ export const authService = {
     } catch (error) {
       console.error('Login error:', error);
       
-      // Handle rate limiting (429 status)
-      if (error.response?.status === 429) {
-        const retryAfter = error.response?.data?.error?.retryAfter || error.retryAfter || 900;
-        return {
-          success: false,
-          message: 'Too many login attempts. Please wait before trying again.',
-          isRateLimited: true,
-          retryAfter: retryAfter
-        };
-      }
-      
       // Handle other HTTP errors
       if (error.response?.data?.error?.message) {
         return {
