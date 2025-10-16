@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
-  studentId: {
+  employeeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Student',
-    required: [true, 'Student ID is required']
+    ref: 'Employee',
+    required: [true, 'Employee ID is required']
   },
   attendanceId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,19 +13,19 @@ const notificationSchema = new mongoose.Schema({
       return this.type === 'attendance';
     }
   },
-  guardianPhone: {
+  emergencyContactPhone: {
     type: String,
-    required: [true, 'Guardian phone is required'],
+    required: [true, 'Emergency contact phone is required'],
     trim: true
   },
-  guardianEmail: {
+  emergencyContactEmail: {
     type: String,
     trim: true,
     lowercase: true
   },
-  guardianName: {
+  emergencyContactName: {
     type: String,
-    required: [true, 'Guardian name is required'],
+    required: [true, 'Emergency contact name is required'],
     trim: true
   },
   message: {
@@ -117,11 +117,11 @@ const notificationSchema = new mongoose.Schema({
     trim: true
   },
   metadata: {
-    studentName: String,
-    className: String,
+    employeeName: String,
+    departmentName: String,
     attendanceTime: Date,
     attendanceStatus: String,
-    schoolName: String,
+    companyName: String,
     customData: mongoose.Schema.Types.Mixed
   },
   readStatus: {
@@ -148,7 +148,7 @@ const notificationSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-notificationSchema.index({ studentId: 1 });
+notificationSchema.index({ employeeId: 1 });
 notificationSchema.index({ type: 1 });
 notificationSchema.index({ overallStatus: 1 });
 notificationSchema.index({ priority: 1 });
@@ -156,9 +156,9 @@ notificationSchema.index({ scheduledFor: 1 });
 notificationSchema.index({ createdAt: -1 });
 
 // Compound indexes
-notificationSchema.index({ studentId: 1, type: 1, createdAt: -1 });
+notificationSchema.index({ employeeId: 1, type: 1, createdAt: -1 });
 notificationSchema.index({ overallStatus: 1, scheduledFor: 1 });
-notificationSchema.index({ guardianPhone: 1, createdAt: -1 });
+notificationSchema.index({ emergencyContactPhone: 1, createdAt: -1 });
 
 // Pre-save middleware to update overall status
 notificationSchema.pre('save', function(next) {
@@ -225,13 +225,13 @@ notificationSchema.virtual('formattedScheduledTime').get(function() {
 });
 
 // Static method to create attendance notification
-notificationSchema.statics.createAttendanceNotification = async function(studentData, attendanceData, options = {}) {
+notificationSchema.statics.createAttendanceNotification = async function(employeeData, attendanceData, options = {}) {
   const notification = new this({
-    studentId: studentData._id,
+    employeeId: employeeData._id,
     attendanceId: attendanceData._id,
-    guardianPhone: studentData.guardianPhone,
-    guardianEmail: studentData.guardianEmail,
-    guardianName: studentData.guardianName,
+    emergencyContactPhone: employeeData.emergencyContactPhone,
+    emergencyContactEmail: employeeData.emergencyContactEmail,
+    emergencyContactName: employeeData.emergencyContactName,
     type: 'attendance',
     priority: attendanceData.status === 'late' ? 'high' : 'normal',
     channels: {
@@ -239,38 +239,38 @@ notificationSchema.statics.createAttendanceNotification = async function(student
         enabled: options.enableSMS !== false
       },
       email: {
-        enabled: options.enableEmail === true && studentData.guardianEmail
+        enabled: options.enableEmail === true && employeeData.emergencyContactEmail
       }
     },
     metadata: {
-      studentName: studentData.fullName,
-      className: studentData.classSection,
+      employeeName: employeeData.fullName,
+      departmentName: employeeData.departmentPosition,
       attendanceTime: attendanceData.scanTime,
       attendanceStatus: attendanceData.status,
-      schoolName: options.schoolName || 'School'
+      companyName: options.companyName || 'Company'
     }
   });
   
   // Generate message based on template
   notification.message = notification.generateAttendanceMessage();
-  notification.subject = `Attendance Update - ${studentData.fullName}`;
+  notification.subject = `Attendance Update - ${employeeData.fullName}`;
   
   return notification.save();
 };
 
 // Instance method to generate attendance message
 notificationSchema.methods.generateAttendanceMessage = function() {
-  const { studentName, attendanceTime, attendanceStatus, schoolName } = this.metadata;
+  const { employeeName, attendanceTime, attendanceStatus, companyName } = this.metadata;
   const time = new Date(attendanceTime).toLocaleTimeString();
   const date = new Date(attendanceTime).toLocaleDateString();
   
   let statusText = '';
   switch (attendanceStatus) {
     case 'present':
-      statusText = 'has arrived at school';
+      statusText = 'has arrived at work';
       break;
     case 'late':
-      statusText = 'arrived late at school';
+      statusText = 'arrived late at work';
       break;
     case 'absent':
       statusText = 'is marked absent';
@@ -279,7 +279,7 @@ notificationSchema.methods.generateAttendanceMessage = function() {
       statusText = 'attendance recorded';
   }
   
-  return `Dear ${this.guardianName}, ${studentName} ${statusText} on ${date} at ${time}. - ${schoolName}`;
+  return `Dear ${this.emergencyContactName}, ${employeeName} ${statusText} on ${date} at ${time}. - ${companyName}`;
 };
 
 // Instance method to update channel status

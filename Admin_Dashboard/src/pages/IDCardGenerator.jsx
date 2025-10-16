@@ -1,16 +1,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { studentService } from '../services/studentService';
+import { employeeService } from '../services/employeeService';
 import QRCode from 'qrcode';
 import { useReactToPrint } from 'react-to-print';
 import { toast } from 'react-hot-toast';
 import html2canvas from 'html2canvas';
 import logo from '../assets/Logo.png';
 
+// Service using employee data for ID cards
+const idCardService = {
+  getAllEmployees: (params) => employeeService.getAllEmployees(params),
+  getEmployeeQRCode: (id) => employeeService.getEmployeeQRCode(id),
+  getDepartments: () => employeeService.getDepartments(),
+};
+
 const IDCardGenerator = () => {
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
-  const [selectedClass, setSelectedClass] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   const [cardSettings, setCardSettings] = useState({
     template: 'professional-blue',
     includeQR: true,
@@ -19,10 +26,10 @@ const IDCardGenerator = () => {
     includeMedical: false,
     includeGuardian: false,
     includeEmergency: false,
-    schoolName: 'EduTrack International School',
-    schoolAddress: '123 Education Street, Academic City, AC 12345',
-    schoolPhone: '(555) 123-4567',
-    schoolWebsite: 'www.edutrack.edu',
+    companyName: 'EduTrack International',
+    companyAddress: '123 Business Street, Corporate City, CC 12345',
+    companyPhone: '(555) 123-4567',
+    companyWebsite: 'www.edutrack.com',
     validUntil: new Date().getFullYear() + 1,
     cardType: 'standard', // standard, premium, temporary
     securityFeatures: true
@@ -34,17 +41,17 @@ const IDCardGenerator = () => {
   const printRef = useRef();
   const cardRef = useRef();
 
-  const generateQRCode = useCallback(async (student) => {
-    if (!student) {
+  const generateQRCode = useCallback(async (employee) => {
+    if (!employee) {
       setQrCodeDataURL('');
       return Promise.resolve();
     }
 
-    // Always generate QR code if student exists, regardless of includeQR setting
+    // Always generate QR code if employee exists, regardless of includeQR setting
     try {
       // First try to get QR code from backend
       try {
-        const qrData = await studentService.getStudentQRCode(student._id);
+        const qrData = await idCardService.getEmployeeQRCode(employee._id);
         if (qrData && qrData.qrCodeImage) {
           setQrCodeDataURL(qrData.qrCodeImage);
           return Promise.resolve(qrData.qrCodeImage);
@@ -55,11 +62,11 @@ const IDCardGenerator = () => {
 
       // Fallback: Generate QR code locally for attendance scanning
       const qrData = {
-        studentId: student.studentId,
-        id: student._id,
-        name: `${student.firstName} ${student.lastName}`,
-        class: student.class,
-        section: student.section,
+        employeeId: employee.employeeId,
+        id: employee._id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        department: employee.department,
+        position: employee.position,
         timestamp: Date.now(),
         type: 'attendance'
       };
@@ -79,9 +86,9 @@ const IDCardGenerator = () => {
     } catch (error) {
       console.error('Error generating QR code:', error);
       
-      // Generate a simple fallback QR code with just student ID
+      // Generate a simple fallback QR code with just employee ID
       try {
-        const fallbackData = student.studentId || 'NO_ID';
+        const fallbackData = employee.employeeId || 'NO_ID';
         const fallbackQR = await QRCode.toDataURL(fallbackData, {
           width: 200,
           margin: 2,
@@ -104,30 +111,30 @@ const IDCardGenerator = () => {
     try {
       setLoading(true);
       
-      // Fetch students and classes from backend API
-      const [studentsData, classesData] = await Promise.all([
-        studentService.getAllStudents({ limit: 1000, isActive: true }),
-        studentService.getClasses()
+      // Fetch employees and departments from backend API
+      const [employeesData, departmentsData] = await Promise.all([
+        idCardService.getAllEmployees({ limit: 1000, isActive: true }),
+        idCardService.getDepartments()
       ]);
 
-      console.log('Backend API Response - Students:', studentsData);
-      console.log('Backend API Response - Classes:', classesData);
+      console.log('Backend API Response - Employees:', employeesData);
+      console.log('Backend API Response - Departments:', departmentsData);
 
-      if (!studentsData || studentsData.length === 0) {
-        toast.error('No students found. Please add students first.');
-        setStudents([]);
-        setClasses(classesData || []);
+      if (!employeesData || employeesData.length === 0) {
+        toast.error('No employees found. Please add employees first.');
+        setEmployees([]);
+        setDepartments(departmentsData || []);
         return;
       }
 
-      setStudents(studentsData);
-      setClasses(classesData || []);
+      setEmployees(employeesData);
+      setDepartments(departmentsData || []);
 
-      // Auto-select first student and generate QR code
-      setSelectedStudent(studentsData[0]);
-      await generateQRCode(studentsData[0]);
+      // Auto-select first employee and generate QR code
+      setSelectedEmployee(employeesData[0]);
+      await generateQRCode(employeesData[0]);
       
-      toast.success(`Loaded ${studentsData.length} students from database`);
+      toast.success(`Loaded ${employeesData.length} employees from database`);
     } catch (error) {
       console.error('Error fetching data from backend:', error);
       
@@ -136,12 +143,12 @@ const IDCardGenerator = () => {
       } else if (error.message?.includes('Network Error') || error.message?.includes('ERR_NETWORK')) {
         toast.error('Cannot connect to server. Please check if the backend is running.');
       } else {
-        toast.error('Failed to load students data. Please try again.');
+        toast.error('Failed to load employees data. Please try again.');
       }
       
       // Set empty state on error
-      setStudents([]);
-      setClasses([]);
+      setEmployees([]);
+      setDepartments([]);
     } finally {
       setLoading(false);
     }
@@ -151,16 +158,16 @@ const IDCardGenerator = () => {
     fetchInitialData();
   }, [fetchInitialData]);
 
-  const handleStudentChange = async (e) => {
-    const studentId = e.target.value;
-    const student = students.find(s => s._id === studentId);
-    setSelectedStudent(student);
-    if (student) {
-      // Always generate QR code when student is selected
+  const handleEmployeeChange = async (e) => {
+    const employeeId = e.target.value;
+    const employee = employees.find(s => s._id === employeeId);
+    setSelectedEmployee(employee);
+    if (employee) {
+      // Always generate QR code when employee is selected
       try {
-        await generateQRCode(student);
+        await generateQRCode(employee);
       } catch (error) {
-        console.error('Error generating QR code for selected student:', error);
+        console.error('Error generating QR code for selected employee:', error);
         // Continue anyway, QR code will show placeholder
       }
     } else {
@@ -168,38 +175,38 @@ const IDCardGenerator = () => {
     }
   };
 
-  const handleClassChange = async (e) => {
-    const className = e.target.value;
-    setSelectedClass(className);
+  const handleDepartmentChange = async (e) => {
+    const departmentName = e.target.value;
+    setSelectedDepartment(departmentName);
 
-    if (className === '') {
-      // Show all students
-      const firstStudent = students[0];
-      setSelectedStudent(firstStudent);
-      if (firstStudent) await generateQRCode(firstStudent);
+    if (departmentName === '') {
+      // Show all employees
+      const firstEmployee = employees[0];
+      setSelectedEmployee(firstEmployee);
+      if (firstEmployee) await generateQRCode(firstEmployee);
     } else {
       try {
-        // Fetch students by class from backend
-        const classStudents = await studentService.getAllStudents({ 
-          class: className, 
+        // Fetch employees by department from backend
+        const departmentEmployees = await idCardService.getAllEmployees({ 
+          department: departmentName, 
           isActive: true,
           limit: 1000 
         });
         
-        console.log('Students for class', className, ':', classStudents);
+        console.log('Employees for department', departmentName, ':', departmentEmployees);
         
-        if (classStudents.length > 0) {
-          setSelectedStudent(classStudents[0]);
-          await generateQRCode(classStudents[0]);
-          toast.success(`Loaded ${classStudents.length} students from ${className}`);
+        if (departmentEmployees.length > 0) {
+          setSelectedEmployee(departmentEmployees[0]);
+          await generateQRCode(departmentEmployees[0]);
+          toast.success(`Loaded ${departmentEmployees.length} employees from ${departmentName}`);
         } else {
-          setSelectedStudent(null);
-          toast.info(`No students found in ${className}`);
+          setSelectedEmployee(null);
+          toast.info(`No employees found in ${departmentName}`);
         }
       } catch (error) {
-        console.error('Error fetching class students:', error);
-        toast.error(`Failed to load students for ${className}`);
-        setSelectedStudent(null);
+        console.error('Error fetching department employees:', error);
+        toast.error(`Failed to load employees for ${departmentName}`);
+        setSelectedEmployee(null);
       }
     }
   };
@@ -209,22 +216,22 @@ const IDCardGenerator = () => {
     setCardSettings(newSettings);
 
     if (setting === 'includeQR') {
-      if (value && selectedStudent) {
-        await generateQRCode(selectedStudent);
+      if (value && selectedEmployee) {
+        await generateQRCode(selectedEmployee);
       } else {
         setQrCodeDataURL('');
       }
     }
   };
 
-  const getFilteredStudents = () => {
-    if (!selectedClass) return students;
-    return students.filter(s => s.class === selectedClass);
+  const getFilteredEmployees = () => {
+    if (!selectedDepartment) return employees;
+    return employees.filter(e => e.department === selectedDepartment);
   };
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `ID_Card_${selectedStudent?.studentId || 'Student'}`,
+    documentTitle: `ID_Card_${selectedEmployee?.employeeId || 'Employee'}`,
     pageStyle: `
       @page {
         size: 86mm 54mm;
@@ -259,7 +266,7 @@ const IDCardGenerator = () => {
     onBeforePrint: () => {
       console.log('Starting print...');
       // Create print content from preview
-      if (selectedStudent) {
+      if (selectedEmployee) {
         const previewCard = document.querySelector('.id-card-preview .id-card');
         if (previewCard && printRef.current) {
           // Clone the preview card content for printing
@@ -280,22 +287,22 @@ const IDCardGenerator = () => {
   });
 
   const handleSaveCard = async () => {
-    if (!selectedStudent) {
-      toast.error('Please select a student first');
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first');
       return;
     }
 
     try {
       // Create card data object
       const cardData = {
-        studentId: selectedStudent._id,
-        studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-        studentNumber: selectedStudent.studentId,
-        class: selectedStudent.class,
-        section: selectedStudent.section,
+        employeeId: selectedEmployee._id,
+        employeeName: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        employeeNumber: selectedEmployee.employeeId,
+        department: selectedEmployee.department,
+        position: selectedEmployee.position,
         template: cardSettings.template,
         cardType: cardSettings.cardType,
-        schoolName: cardSettings.schoolName,
+        companyName: cardSettings.companyName,
         validUntil: cardSettings.validUntil,
         includePhoto: cardSettings.includePhoto,
         includeQR: cardSettings.includeQR,
@@ -314,7 +321,7 @@ const IDCardGenerator = () => {
       localStorage.setItem('savedIDCards', JSON.stringify(savedCards));
 
       // You can also save to your backend API here
-      // await studentService.saveIDCard(cardData);
+      // await idCardService.saveIDCard(cardData);
 
       toast.success('ID Card saved successfully!');
       
@@ -338,8 +345,8 @@ const IDCardGenerator = () => {
   }, []);
 
   const handleSaveAsImage = async () => {
-    if (!selectedStudent) {
-      toast.error('No student selected or card not ready');
+    if (!selectedEmployee) {
+      toast.error('No employee selected or card not ready');
       return;
     }
 
@@ -420,7 +427,7 @@ const IDCardGenerator = () => {
         if (blob) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `ID_Card_4K_${selectedStudent.studentId}_${selectedStudent.firstName}_${selectedStudent.lastName}.png`;
+          link.download = `ID_Card_4K_${selectedEmployee.employeeId || selectedEmployee._id}_${selectedEmployee.firstName}_${selectedEmployee.lastName}.png`;
           link.href = url;
           document.body.appendChild(link);
           link.click();
@@ -438,13 +445,13 @@ const IDCardGenerator = () => {
   };
 
   const handleGeneratePreview = async () => {
-    if (!selectedStudent) {
-      toast.error('Please select a student first');
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first');
       return;
     }
 
     try {
-      await generateQRCode(selectedStudent);
+      await generateQRCode(selectedEmployee);
       toast.success('Preview generated successfully!');
     } catch (error) {
       console.error('Error generating preview:', error);
@@ -453,19 +460,19 @@ const IDCardGenerator = () => {
   };
 
   const handleForceGenerateQR = async () => {
-    if (!selectedStudent) {
-      toast.error('Please select a student first');
+    if (!selectedEmployee) {
+      toast.error('Please select an employee first');
       return;
     }
 
     try {
       // Force generate QR code
       const qrData = {
-        studentId: selectedStudent.studentId,
-        id: selectedStudent._id,
-        name: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-        class: selectedStudent.class,
-        section: selectedStudent.section,
+        employeeId: selectedEmployee.employeeId || selectedEmployee._id,
+        id: selectedEmployee._id,
+        name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        department: selectedEmployee.department,
+        position: selectedEmployee.position,
         timestamp: Date.now(),
         type: 'attendance'
       };
@@ -489,26 +496,26 @@ const IDCardGenerator = () => {
   };
 
   const handleGenerateBatch = async () => {
-    if (!selectedClass) {
-      toast.error('Please select a class for batch generation');
+    if (!selectedDepartment) {
+      toast.error('Please select a department for batch generation');
       return;
     }
 
-    const classStudents = getFilteredStudents();
-    if (classStudents.length === 0) {
-      toast.error('No students found in the selected class');
+    const departmentEmployees = getFilteredEmployees();
+    if (departmentEmployees.length === 0) {
+      toast.error('No employees found in the selected department');
       return;
     }
 
     // Confirm batch generation
     const confirmed = window.confirm(
-      `Generate ID cards for ${classStudents.length} students in ${selectedClass}?\n\nThis may take a few minutes.`
+      `Generate ID cards for ${departmentEmployees.length} employees in ${selectedDepartment}?\n\nThis may take a few minutes.`
     );
     
     if (!confirmed) return;
 
     setGenerating(true);
-    setBatchProgress({ current: 0, total: classStudents.length, isActive: true });
+    setBatchProgress({ current: 0, total: departmentEmployees.length, isActive: true });
     const loadingToast = toast.loading('Starting batch generation...');
     
     try {
@@ -516,23 +523,23 @@ const IDCardGenerator = () => {
       const savedCards = JSON.parse(localStorage.getItem('savedIDCards') || '[]');
       const batchId = Date.now();
       
-      for (let i = 0; i < classStudents.length; i++) {
-        const student = classStudents[i];
+      for (let i = 0; i < departmentEmployees.length; i++) {
+        const employee = departmentEmployees[i];
         
         try {
           // Update progress
-          setBatchProgress({ current: i + 1, total: classStudents.length, isActive: true });
-          toast.loading(`Processing ${i + 1}/${classStudents.length}: ${student.firstName} ${student.lastName}`, { id: loadingToast });
+          setBatchProgress({ current: i + 1, total: departmentEmployees.length, isActive: true });
+          toast.loading(`Processing ${i + 1}/${departmentEmployees.length}: ${employee.firstName} ${employee.lastName}`, { id: loadingToast });
 
-          // Generate QR code for each student
+          // Generate QR code for each employee
           let qrCodeDataURL = '';
           if (cardSettings.includeQR) {
             const qrData = {
-              studentId: student.studentId,
-              id: student._id,
-              name: `${student.firstName} ${student.lastName}`,
-              class: student.class,
-              section: student.section,
+              employeeId: employee.employeeId,
+              id: employee._id,
+              name: `${employee.firstName} ${employee.lastName}`,
+              department: employee.department,
+              position: employee.position,
               timestamp: Date.now(),
               type: 'attendance'
             };
@@ -550,14 +557,14 @@ const IDCardGenerator = () => {
           // Create card data
           const cardData = {
             id: batchId + i, // Unique ID based on batch and index
-            studentId: student._id,
-            studentName: `${student.firstName} ${student.lastName}`,
-            studentNumber: student.studentId,
-            class: student.class,
-            section: student.section,
+            employeeId: employee._id,
+            employeeName: `${employee.firstName} ${employee.lastName}`,
+            employeeNumber: employee.employeeId,
+            department: employee.department,
+            position: employee.position,
             template: cardSettings.template,
             cardType: cardSettings.cardType,
-            schoolName: cardSettings.schoolName,
+            companyName: cardSettings.companyName,
             validUntil: cardSettings.validUntil,
             includePhoto: cardSettings.includePhoto,
             includeQR: cardSettings.includeQR,
@@ -566,7 +573,7 @@ const IDCardGenerator = () => {
             generatedBy: 'admin',
             settings: { ...cardSettings },
             batchId: batchId,
-            studentData: { ...student } // Store complete student data
+            employeeData: { ...employee } // Store complete employee data
           };
 
           cards.push(cardData);
@@ -576,8 +583,8 @@ const IDCardGenerator = () => {
           await new Promise(resolve => setTimeout(resolve, 50));
 
         } catch (error) {
-          console.error(`Error generating card for ${student.firstName} ${student.lastName}:`, error);
-          toast.error(`Failed to generate card for ${student.firstName} ${student.lastName}`);
+          console.error(`Error generating card for ${employee.firstName} ${employee.lastName}:`, error);
+          toast.error(`Failed to generate card for ${employee.firstName} ${employee.lastName}`);
         }
       }
 
@@ -591,7 +598,7 @@ const IDCardGenerator = () => {
       setBatchProgress({ current: 0, total: 0, isActive: false });
 
       // Success notification
-      toast.success(`Successfully generated ${cards.length} ID cards for ${selectedClass}!`, { id: loadingToast });
+      toast.success(`Successfully generated ${cards.length} ID cards for ${selectedDepartment}!`, { id: loadingToast });
 
       // Show batch completion dialog with options
       showBatchCompletionDialog(cards);
@@ -644,30 +651,30 @@ const IDCardGenerator = () => {
     
     try {
       // Store original state
-      const originalStudent = selectedStudent;
+      const originalEmployee = selectedEmployee;
       const originalQR = qrCodeDataURL;
       const originalSettings = { ...cardSettings };
 
       for (let i = 0; i < cards.length; i++) {
         const card = cards[i];
         
-        toast.loading(`Downloading ${i + 1}/${cards.length}: ${card.studentName}`, { id: downloadToast });
+        toast.loading(`Downloading ${i + 1}/${cards.length}: ${card.employeeName}`, { id: downloadToast });
 
-        // Find the student data
-        let student = students.find(s => s._id === card.studentId);
+        // Find the employee data
+        let employee = employees.find(e => e._id === card.employeeId);
         
-        // If not found in current students, use stored student data from card
-        if (!student && card.studentData) {
-          student = card.studentData;
+        // If not found in current employees, use stored employee data from card
+        if (!employee && card.employeeData) {
+          employee = card.employeeData;
         }
         
-        if (!student) {
-          console.warn(`Student not found for card: ${card.studentName}`);
+        if (!employee) {
+          console.warn(`Employee not found for card: ${card.employeeName}`);
           continue;
         }
 
         // Set up the card for rendering
-        setSelectedStudent(student);
+        setSelectedEmployee(employee);
         setQrCodeDataURL(card.qrCodeData || '');
         setCardSettings(card.settings || originalSettings);
 
@@ -702,7 +709,7 @@ const IDCardGenerator = () => {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `ID_Card_${card.studentName.replace(/\s+/g, '_')}_${card.studentNumber}_${card.class}${card.section}.png`;
+                link.download = `ID_Card_${card.employeeName.replace(/\s+/g, '_')}_${card.employeeNumber}_${card.department}${card.position}.png`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -711,8 +718,8 @@ const IDCardGenerator = () => {
             }, 'image/png', 1.0);
 
           } catch (error) {
-            console.error(`Error downloading card for ${card.studentName}:`, error);
-            toast.error(`Failed to download card for ${card.studentName}`);
+            console.error(`Error downloading card for ${card.employeeName}:`, error);
+            toast.error(`Failed to download card for ${card.employeeName}`);
           }
         }
 
@@ -721,7 +728,7 @@ const IDCardGenerator = () => {
       }
 
       // Restore original state
-      setSelectedStudent(originalStudent);
+      setSelectedEmployee(originalEmployee);
       setQrCodeDataURL(originalQR);
       setCardSettings(originalSettings);
 
@@ -847,12 +854,12 @@ const IDCardGenerator = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Professional ID Card Generator</h1>
-            <p className="text-gray-600 mt-1">Create official school ID cards with advanced features and professional design</p>
+            <p className="text-gray-600 mt-1">Create official employee ID cards with advanced features and professional design</p>
           </div>
           <div className="flex space-x-3">
             <button
               onClick={handleGenerateBatch}
-              disabled={generating || !selectedClass}
+              disabled={generating || !selectedDepartment}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -894,7 +901,7 @@ const IDCardGenerator = () => {
           <div className="flex justify-center mb-6">
             {/* Visible Preview */}
             <div className="id-card-preview">
-              {selectedStudent ? (
+              {selectedEmployee ? (
                 <div
                   className="id-card rounded-lg p-6 w-[650px] h-[400px] shadow-xl relative overflow-hidden"
                   style={{
@@ -934,12 +941,12 @@ const IDCardGenerator = () => {
                         />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold uppercase tracking-wider">{cardSettings.schoolName}</h3>
+                        <h3 className="text-lg font-bold uppercase tracking-wider">{cardSettings.companyName}</h3>
                         <p 
                           className="text-sm"
                           style={{ color: getSecondaryTextColor() }}
                         >
-                          STUDENT IDENTIFICATION CARD
+                          EMPLOYEE IDENTIFICATION CARD
                         </p>
                       </div>
                     </div>
@@ -949,7 +956,7 @@ const IDCardGenerator = () => {
                         className="text-sm"
                         style={{ color: getSecondaryTextColor() }}
                       >
-                        ACADEMIC YEAR
+                        VALID YEAR
                       </div>
                     </div>
                   </div>
@@ -958,10 +965,10 @@ const IDCardGenerator = () => {
                   <div className="flex h-64">
                     {/* Left Section - Photo */}
                     <div className="flex-shrink-0 mr-3">
-                      {cardSettings.includePhoto && selectedStudent.profilePhoto ? (
+                      {cardSettings.includePhoto && selectedEmployee.profilePhoto ? (
                         <img
-                          src={selectedStudent.profilePhoto}
-                          alt="Student Photo"
+                          src={selectedEmployee.profilePhoto}
+                          alt="Employee Photo"
                           className="w-32 h-40 rounded-lg object-cover shadow-lg"
                           style={{
                             backgroundColor: getPlaceholderStyle().backgroundColor,
@@ -986,7 +993,7 @@ const IDCardGenerator = () => {
                               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
                             </svg>
                             <span className="text-xl font-bold block">
-                              {getInitials(selectedStudent.firstName, selectedStudent.lastName)}
+                              {getInitials(selectedEmployee.firstName, selectedEmployee.lastName)}
                             </span>
                             <span className="text-xs opacity-80 block mt-1">PHOTO</span>
                           </div>
@@ -994,13 +1001,13 @@ const IDCardGenerator = () => {
                       )}
                     </div>
 
-                    {/* Middle Section - Student Details */}
+                    {/* Middle Section - Employee Details */}
                     <div className="flex-1 flex flex-col justify-between mr-3">
-                      {/* Student Information */}
+                      {/* Employee Information */}
                       <div>
                         <div className="mb-2">
                           <h2 className="text-xl font-bold mb-1">
-                            {selectedStudent.firstName} {selectedStudent.lastName}
+                            {selectedEmployee.firstName} {selectedEmployee.lastName}
                           </h2>
                           <div className="flex items-center space-x-2 text-sm flex-wrap gap-y-1">
                             <span 
@@ -1010,7 +1017,7 @@ const IDCardGenerator = () => {
                                 color: getBadgeTextColor()
                               }}
                             >
-                              {selectedStudent.class}-{selectedStudent.section}
+                              {selectedEmployee.department}
                             </span>
                             <span 
                               className="px-2 py-1 rounded-full font-medium text-xs"
@@ -1019,9 +1026,9 @@ const IDCardGenerator = () => {
                                 color: getBadgeTextColor()
                               }}
                             >
-                              ID: {selectedStudent.studentId}
+                              ID: {selectedEmployee.employeeId || selectedEmployee._id}
                             </span>
-                            {selectedStudent.rollNumber && (
+                            {selectedEmployee.position && (
                               <span 
                                 className="px-2 py-1 rounded-full font-medium text-xs"
                                 style={{
@@ -1029,7 +1036,7 @@ const IDCardGenerator = () => {
                                   color: getBadgeTextColor()
                                 }}
                               >
-                                Roll: {selectedStudent.rollNumber}
+                                {selectedEmployee.position}
                               </span>
                             )}
                           </div>
@@ -1045,29 +1052,29 @@ const IDCardGenerator = () => {
                               Contact
                             </h4>
                             <div className="space-y-1">
-                              {selectedStudent.email && (
+                              {selectedEmployee.email && (
                                 <div 
                                   className="text-xs flex items-start"
                                   style={{ color: getSecondaryTextColor() }}
                                 >
                                   <span className="mr-1 flex-shrink-0">📧</span> 
-                                  <span className="truncate min-w-0">{selectedStudent.email}</span>
+                                  <span className="truncate min-w-0">{selectedEmployee.email}</span>
                                 </div>
                               )}
-                              {selectedStudent.phoneNumber && (
+                              {selectedEmployee.phoneNumber && (
                                 <div 
                                   className="text-xs flex items-center"
                                   style={{ color: getSecondaryTextColor() }}
                                 >
-                                  <span className="mr-1">📞</span> {selectedStudent.phoneNumber}
+                                  <span className="mr-1">📞</span> {selectedEmployee.phoneNumber}
                                 </div>
                               )}
-                              {selectedStudent.dateOfBirth && (
+                              {selectedEmployee.joinDate && (
                                 <div 
                                   className="text-xs flex items-center"
                                   style={{ color: getSecondaryTextColor() }}
                                 >
-                                  <span className="mr-1">📅</span> {formatDate(selectedStudent.dateOfBirth)}
+                                  <span className="mr-1">📅</span> {formatDate(selectedEmployee.joinDate)}
                                 </div>
                               )}
                             </div>
@@ -1081,13 +1088,13 @@ const IDCardGenerator = () => {
                               Academic
                             </h4>
                             <div className="space-y-1">
-                              {selectedStudent.enrollmentDate && (
+                              {selectedEmployee.hireDate && (
                                 <div 
                                   className="text-xs flex items-start"
                                   style={{ color: getSecondaryTextColor() }}
                                 >
                                   <span className="mr-1 flex-shrink-0">🎓</span> 
-                                  <span className="truncate min-w-0">Enrolled: {formatDate(selectedStudent.enrollmentDate)}</span>
+                                  <span className="truncate min-w-0">Hired: {formatDate(selectedEmployee.hireDate)}</span>
                                 </div>
                               )}
                               <div 
@@ -1107,23 +1114,23 @@ const IDCardGenerator = () => {
                         </div>
 
                         {/* Emergency Contact */}
-                        {cardSettings.includeEmergency && selectedStudent.emergencyContact?.name && (
+                        {cardSettings.includeEmergency && selectedEmployee.emergencyContact?.name && (
                           <div className="mb-2 p-2 bg-red-500 bg-opacity-20 rounded border border-red-300">
                             <h4 className="text-xs font-semibold mb-1 text-red-100">Emergency</h4>
-                            <div className="text-xs font-medium text-white">{selectedStudent.emergencyContact.name}</div>
-                            {selectedStudent.emergencyContact.phone && (
-                              <div className="text-xs text-white">📞 {selectedStudent.emergencyContact.phone}</div>
+                            <div className="text-xs font-medium text-white">{selectedEmployee.emergencyContact.name}</div>
+                            {selectedEmployee.emergencyContact.phone && (
+                              <div className="text-xs text-white">📞 {selectedEmployee.emergencyContact.phone}</div>
                             )}
                           </div>
                         )}
 
                         {/* Medical Information */}
-                        {cardSettings.includeMedical && selectedStudent.medicalInfo?.bloodType && (
+                        {cardSettings.includeMedical && selectedEmployee.medicalInfo?.bloodType && (
                           <div className="mb-2 p-2 bg-red-600 bg-opacity-20 rounded border border-red-400">
                             <h4 className="text-xs font-semibold mb-1 text-red-100">Medical</h4>
-                            <div className="text-xs font-medium text-white">Blood: {selectedStudent.medicalInfo.bloodType}</div>
-                            {selectedStudent.medicalInfo.allergies?.length > 0 && (
-                              <div className="text-xs text-white">Allergies: {selectedStudent.medicalInfo.allergies.join(', ')}</div>
+                            <div className="text-xs font-medium text-white">Blood: {selectedEmployee.medicalInfo.bloodType}</div>
+                            {selectedEmployee.medicalInfo.allergies?.length > 0 && (
+                              <div className="text-xs text-white">Allergies: {selectedEmployee.medicalInfo.allergies.join(', ')}</div>
                             )}
                           </div>
                         )}
@@ -1133,8 +1140,8 @@ const IDCardGenerator = () => {
                       <div className="border-t border-white border-opacity-20 pt-1 mt-auto">
                         <div className="flex justify-between items-center">
                           <div style={{ color: getSecondaryTextColor() }} className="text-xs">
-                            <div className="truncate max-w-48">{cardSettings.schoolAddress}</div>
-                            <div className="truncate">{cardSettings.schoolPhone}</div>
+                            <div className="truncate max-w-48">{cardSettings.companyAddress}</div>
+                            <div className="truncate">{cardSettings.companyPhone}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-semibold text-xs">Valid: Dec {cardSettings.validUntil}</div>
@@ -1183,7 +1190,7 @@ const IDCardGenerator = () => {
                         >
                           SEC
                         </div>
-                        <div className="text-sm font-bold opacity-80">{selectedStudent.studentId.slice(-4).toUpperCase()}</div>
+                        <div className="text-sm font-bold opacity-80">{selectedEmployee.employeeId ? selectedEmployee.employeeId.slice(-4).toUpperCase() : 'N/A'}</div>
                         <div 
                           className="w-16 h-1 mt-2 rounded-full"
                           style={{ backgroundColor: getPlaceholderStyle().borderColor }}
@@ -1199,15 +1206,15 @@ const IDCardGenerator = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <span className="text-gray-600 text-center font-medium text-lg mb-2">Select a student to preview ID card</span>
-                  <span className="text-gray-500 text-center text-sm">Choose a student from the dropdown menu to generate their ID card</span>
+                  <span className="text-gray-600 text-center font-medium text-lg mb-2">Select an employee to preview ID card</span>
+                  <span className="text-gray-500 text-center text-sm">Choose an employee from the dropdown menu to generate their ID card</span>
                 </div>
               )}
             </div>
 
             {/* Hidden Print Container - Optimized for Printing */}
             <div ref={printRef} className="print-container" style={{ position: 'absolute', left: '-9999px', top: '0' }}>
-              {selectedStudent && (
+              {selectedEmployee && (
                 <div
                   ref={cardRef}
                   className="id-card rounded-lg p-3 shadow-xl relative overflow-hidden"
@@ -1232,17 +1239,17 @@ const IDCardGenerator = () => {
                       >
                         <img
                           src={logo}
-                          alt="School Logo"
+                          alt="Company Logo"
                           className="w-4 h-4 rounded-full object-contain"
                         />
                       </div>
                       <div>
-                        <div className="text-xs font-bold leading-tight">{cardSettings.schoolName}</div>
+                        <div className="text-xs font-bold leading-tight">{cardSettings.companyName}</div>
                         <div 
                           className="text-xs leading-tight"
                           style={{ color: getSecondaryTextColor() }}
                         >
-                          STUDENT ID
+                          EMPLOYEE ID
                         </div>
                       </div>
                     </div>
@@ -1255,10 +1262,10 @@ const IDCardGenerator = () => {
                   <div className="flex h-28">
                     {/* Photo */}
                     <div className="flex-shrink-0 mr-2">
-                      {cardSettings.includePhoto && selectedStudent.profilePhoto ? (
+                      {cardSettings.includePhoto && selectedEmployee.profilePhoto ? (
                         <img
-                          src={selectedStudent.profilePhoto}
-                          alt="Student Photo"
+                          src={selectedEmployee.profilePhoto}
+                          alt="Employee Photo"
                           className="w-16 h-20 rounded object-cover"
                           style={{
                             backgroundColor: getPlaceholderStyle().backgroundColor,
@@ -1283,7 +1290,7 @@ const IDCardGenerator = () => {
                               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
                             </svg>
                             <span className="text-sm font-bold block">
-                              {getInitials(selectedStudent.firstName, selectedStudent.lastName)}
+                              {getInitials(selectedEmployee.firstName, selectedEmployee.lastName)}
                             </span>
                           </div>
                         </div>
@@ -1294,7 +1301,7 @@ const IDCardGenerator = () => {
                     <div className="flex-1 flex flex-col justify-between mr-2">
                       <div>
                         <div className="text-sm font-bold mb-1 leading-tight">
-                          {selectedStudent.firstName} {selectedStudent.lastName}
+                          {selectedEmployee.firstName} {selectedEmployee.lastName}
                         </div>
                         <div className="flex flex-wrap gap-1 mb-1">
                           <span 
@@ -1304,7 +1311,7 @@ const IDCardGenerator = () => {
                               color: getBadgeTextColor()
                             }}
                           >
-                            {selectedStudent.class}-{selectedStudent.section}
+                            {selectedEmployee.department}
                           </span>
                           <span 
                             className="px-1 py-0.5 rounded text-xs font-medium"
@@ -1313,25 +1320,25 @@ const IDCardGenerator = () => {
                               color: getBadgeTextColor()
                             }}
                           >
-                            ID: {selectedStudent.studentId}
+                            ID: {selectedEmployee.employeeId || selectedEmployee._id}
                           </span>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-1 text-xs">
                           <div>
-                            {selectedStudent.email && (
+                            {selectedEmployee.email && (
                               <div 
                                 className="truncate"
                                 style={{ color: getSecondaryTextColor() }}
                               >
-                                📧 {selectedStudent.email}
+                                📧 {selectedEmployee.email}
                               </div>
                             )}
-                            {selectedStudent.phoneNumber && (
+                            {selectedEmployee.phoneNumber && (
                               <div 
                                 style={{ color: getSecondaryTextColor() }}
                               >
-                                📞 {selectedStudent.phoneNumber}
+                                📞 {selectedEmployee.phoneNumber}
                               </div>
                             )}
                           </div>
@@ -1395,37 +1402,37 @@ const IDCardGenerator = () => {
 
         {/* Controls */}
         <div className="space-y-6">
-          {/* Student Selection */}
+          {/* Employee Selection */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Student Selection</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Employee Selection</h4>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Student</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Employee</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={selectedStudent?._id || ''}
-                  onChange={handleStudentChange}
+                  value={selectedEmployee?._id || ''}
+                  onChange={handleEmployeeChange}
                 >
-                  <option value="">Choose a student...</option>
-                  {getFilteredStudents().map(student => (
-                    <option key={student._id} value={student._id}>
-                      {student.firstName} {student.lastName} ({student.class} {student.section})
+                  <option value="">Choose an employee...</option>
+                  {getFilteredEmployees().map(employee => (
+                    <option key={employee._id} value={employee._id}>
+                      {employee.firstName} {employee.lastName} ({employee.department} - {employee.position})
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Class</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Department</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={selectedClass}
-                  onChange={handleClassChange}
+                  value={selectedDepartment}
+                  onChange={handleDepartmentChange}
                 >
-                  <option value="">All Classes</option>
-                  {classes.map(classData => (
-                    <option key={classData._id} value={classData._id}>
-                      {classData._id} ({classData.count} students)
+                  <option value="">All Departments</option>
+                  {departments.map(departmentData => (
+                    <option key={departmentData._id} value={departmentData._id}>
+                      {departmentData._id} ({departmentData.count} employees)
                     </option>
                   ))}
                 </select>
@@ -1468,46 +1475,46 @@ const IDCardGenerator = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">School Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={cardSettings.schoolName}
-                  onChange={(e) => handleSettingsChange('schoolName', e.target.value)}
-                  placeholder="Enter school name"
+                  value={cardSettings.companyName}
+                  onChange={(e) => handleSettingsChange('companyName', e.target.value)}
+                  placeholder="Enter company name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">School Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Address</label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={cardSettings.schoolAddress}
-                  onChange={(e) => handleSettingsChange('schoolAddress', e.target.value)}
-                  placeholder="Enter school address"
+                  value={cardSettings.companyAddress}
+                  onChange={(e) => handleSettingsChange('companyAddress', e.target.value)}
+                  placeholder="Enter company address"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">School Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Phone</label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={cardSettings.schoolPhone}
-                  onChange={(e) => handleSettingsChange('schoolPhone', e.target.value)}
-                  placeholder="Enter school phone"
+                  value={cardSettings.companyPhone}
+                  onChange={(e) => handleSettingsChange('companyPhone', e.target.value)}
+                  placeholder="Enter company phone"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">School Website</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Website</label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={cardSettings.schoolWebsite}
-                  onChange={(e) => handleSettingsChange('schoolWebsite', e.target.value)}
-                  placeholder="Enter school website"
+                  value={cardSettings.companyWebsite}
+                  onChange={(e) => handleSettingsChange('companyWebsite', e.target.value)}
+                  placeholder="Enter company website"
                 />
               </div>
 
@@ -1624,7 +1631,7 @@ const IDCardGenerator = () => {
             <div className="space-y-3">
               <button
                 onClick={handleGeneratePreview}
-                disabled={!selectedStudent}
+                disabled={!selectedEmployee}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1635,7 +1642,7 @@ const IDCardGenerator = () => {
               </button>
               <button
                 onClick={handleForceGenerateQR}
-                disabled={!selectedStudent}
+                disabled={!selectedEmployee}
                 className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1645,8 +1652,8 @@ const IDCardGenerator = () => {
               </button>
               <button
                 onClick={() => {
-                  if (!selectedStudent) {
-                    toast.error('Please select a student first');
+                  if (!selectedEmployee) {
+                    toast.error('Please select an employee first');
                     return;
                   }
                   try {
@@ -1656,7 +1663,7 @@ const IDCardGenerator = () => {
                     toast.error('Failed to print ID card');
                   }
                 }}
-                disabled={!selectedStudent}
+                disabled={!selectedEmployee}
                 className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1666,7 +1673,7 @@ const IDCardGenerator = () => {
               </button>
               <button
                 onClick={handleSaveCard}
-                disabled={!selectedStudent}
+                disabled={!selectedEmployee}
                 className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1676,7 +1683,7 @@ const IDCardGenerator = () => {
               </button>
               <button
                 onClick={handleSaveAsImage}
-                disabled={!selectedStudent}
+                disabled={!selectedEmployee}
                 className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1720,13 +1727,13 @@ const IDCardGenerator = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Student
+                    Employee
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ID Number
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Class
+                    Department
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Template
@@ -1745,34 +1752,34 @@ const IDCardGenerator = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium shadow-md border-2 border-blue-300">
-                          {getInitials(card.studentName.split(' ')[0], card.studentName.split(' ')[1] || '')}
+                          {card.employeeName ? getInitials(card.employeeName.split(' ')[0], card.employeeName.split(' ')[1] || '') : 'N/A'}
                         </div>
                         <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{card.studentName}</div>
+                          <div className="text-sm font-medium text-gray-900">{card.employeeName || 'Unknown Employee'}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {card.studentNumber}
+                      {card.employeeNumber || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {card.class}-{card.section}
+                      {card.department || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                        {card.template}
+                        {card.template || 'standard'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(card.generatedAt).toLocaleDateString()}
+                      {card.generatedAt ? new Date(card.generatedAt).toLocaleDateString() : 'Unknown'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => {
                           // Re-load this card for editing/viewing
-                          const student = students.find(s => s._id === card.studentId);
-                          if (student) {
-                            setSelectedStudent(student);
+                          const employee = employees.find(e => e._id === card.employeeId);
+                          if (employee) {
+                            setSelectedEmployee(employee);
                             setCardSettings(prev => ({
                               ...prev,
                               ...card.settings
@@ -1782,7 +1789,7 @@ const IDCardGenerator = () => {
                             }
                             toast.success('Card loaded for editing');
                           } else {
-                            toast.error('Student not found');
+                            toast.error('Employee not found');
                           }
                         }}
                         className="text-indigo-600 hover:text-indigo-900 mr-3"

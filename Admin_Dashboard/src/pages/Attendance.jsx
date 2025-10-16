@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { attendanceService } from '../services/attendanceService';
-import { studentService } from '../services/studentService';
+import { employeeService } from '../services/employeeService';
 
 const Attendance = () => {
   const [attendance, setAttendance] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchingAttendance, setFetchingAttendance] = useState(false);
   const [error, setError] = useState(null);
@@ -12,7 +12,7 @@ const Attendance = () => {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [filters, setFilters] = useState({
-    studentId: '',
+    employeeId: '',
     startDate: new Date().toISOString().split('T')[0], // Default to today
     endDate: new Date().toISOString().split('T')[0],   // Default to today
     page: 1,
@@ -47,8 +47,8 @@ const Attendance = () => {
     try {
       setLoading(true);
       setError(null);
-      const studentsData = await studentService.getAllStudents();
-      setStudents(studentsData);
+      const employeesData = await employeeService.getAllEmployees();
+      setEmployees(employeesData);
       await fetchAttendance();
     } catch (error) {
       console.error('Error fetching initial data:', error);
@@ -100,7 +100,7 @@ const Attendance = () => {
 
   const clearFilters = () => {
     setFilters({
-      studentId: '',
+      employeeId: '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0],
       page: 1,
@@ -116,57 +116,82 @@ const Attendance = () => {
     return new Date(dateString).toLocaleTimeString();
   };
 
-  const getStudentName = (record) => {
+  const getEmployeeName = (record) => {
     // Check different possible data structures from backend
-    if (record.student) {
-      return `${record.student.firstName || ''} ${record.student.lastName || ''}`.trim();
+    if (record.employee) {
+      return `${record.employee.firstName || ''} ${record.employee.lastName || ''}`.trim();
     }
-    // Check if student data is populated in studentId field (backend population)
+    // Check if employee data is populated in employeeId field (backend population)
+    if (record.employeeId && typeof record.employeeId === 'object') {
+      return `${record.employeeId.firstName || ''} ${record.employeeId.lastName || ''}`.trim();
+    }
+    // Also check for studentId for backward compatibility
     if (record.studentId && typeof record.studentId === 'object') {
       return `${record.studentId.firstName || ''} ${record.studentId.lastName || ''}`.trim();
     }
-    // Fallback to finding from students array
-    const student = students.find(s => s._id === record.studentId);
-    return student ? `${student.firstName} ${student.lastName}` : 'Unknown Student';
+    // Fallback to finding from employees array
+    const employee = employees.find(e => e._id === record.employeeId || e._id === record.studentId);
+    return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
   };
 
-  const getStudentId = (record) => {
+  const getEmployeeId = (record) => {
     // Check different possible data structures
-    if (record.student?.studentId) {
-      return record.student.studentId;
+    if (record.employee?.employeeId) {
+      return record.employee.employeeId;
+    }
+    if (record.employeeId?.employeeId) {
+      return record.employeeId.employeeId;
+    }
+    // Backward compatibility
+    if (record.studentId?.employeeId) {
+      return record.studentId.employeeId;
     }
     if (record.studentId?.studentId) {
       return record.studentId.studentId;
     }
-    // Fallback to finding from students array
-    const student = students.find(s => s._id === record.studentId);
-    return student?.studentId || 'N/A';
+    // Fallback to finding from employees array
+    const employee = employees.find(e => e._id === record.employeeId || e._id === record.studentId);
+    return employee?.employeeId || employee?.studentId || 'N/A';
   };
 
-  const getStudentClass = (record) => {
+  const getEmployeeDepartment = (record) => {
     // Check different possible data structures
-    if (record.student?.class) {
-      return record.student.class;
+    if (record.employee?.department) {
+      return record.employee.department;
+    }
+    if (record.employeeId?.department) {
+      return record.employeeId.department;
+    }
+    // Backward compatibility
+    if (record.studentId?.department) {
+      return record.studentId.department;
     }
     if (record.studentId?.class) {
       return record.studentId.class;
     }
-    // Fallback to finding from students array
-    const student = students.find(s => s._id === record.studentId);
-    return student?.class || 'N/A';
+    // Fallback to finding from employees array
+    const employee = employees.find(e => e._id === record.employeeId || e._id === record.studentId);
+    return employee?.department || employee?.class || 'N/A';
   };
 
-  const getStudentSection = (record) => {
+  const getEmployeePosition = (record) => {
     // Check different possible data structures
-    if (record.student?.section) {
-      return record.student.section;
+    if (record.employee?.position) {
+      return record.employee.position;
+    }
+    if (record.employeeId?.position) {
+      return record.employeeId.position;
+    }
+    // Backward compatibility
+    if (record.studentId?.position) {
+      return record.studentId.position;
     }
     if (record.studentId?.section) {
       return record.studentId.section;
     }
-    // Fallback to finding from students array
-    const student = students.find(s => s._id === record.studentId);
-    return student?.section || 'N/A';
+    // Fallback to finding from employees array
+    const employee = employees.find(e => e._id === record.employeeId || e._id === record.studentId);
+    return employee?.position || employee?.section || 'N/A';
   };
 
   const getStatusBadge = (status) => {
@@ -199,14 +224,14 @@ const Attendance = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Date', 'Time', 'Student Name', 'Student ID', 'Class', 'Section', 'Status', 'Time Window', 'Minutes Late', 'Location'];
+    const headers = ['Date', 'Time', 'Employee Name', 'Employee ID', 'Department', 'Position', 'Status', 'Time Window', 'Minutes Late', 'Location'];
     const csvData = attendance.map(record => [
       formatDate(record.scanTime),
       formatTime(record.scanTime),
-      getStudentName(record),
-      getStudentId(record),
-      getStudentClass(record),
-      getStudentSection(record),
+      getEmployeeName(record),
+      getEmployeeId(record),
+      getEmployeeDepartment(record),
+      getEmployeePosition(record),
       record.status || 'Present',
       record.timeWindow || 'N/A',
       record.minutesLate > 0 ? `+${record.minutesLate} min` : 'On time',
@@ -242,7 +267,7 @@ const Attendance = () => {
         <div className="sm:flex-auto">
           <h1 className="text-xl font-semibold text-gray-900">Attendance Records</h1>
           <p className="mt-2 text-sm text-gray-700">
-            View and filter attendance logs by student and date range.
+            View and filter attendance logs by employee and date range.
           </p>
         </div>
         <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none space-x-3 flex items-center">
@@ -319,18 +344,18 @@ const Attendance = () => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Student
+              Employee
             </label>
             <select
-              name="studentId"
-              value={filters.studentId}
+              name="employeeId"
+              value={filters.employeeId}
               onChange={handleFilterChange}
               className="block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">All Students</option>
-              {students.map(student => (
-                <option key={student._id} value={student._id}>
-                  {`${student.firstName} ${student.lastName}`}
+              <option value="">All Employees</option>
+              {employees.map(employee => (
+                <option key={employee._id} value={employee._id}>
+                  {`${employee.firstName} ${employee.lastName}`}
                 </option>
               ))}
             </select>
@@ -388,16 +413,16 @@ const Attendance = () => {
                       Time
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
+                      Employee
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student ID
+                      Employee ID
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Class
+                      Department
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Section
+                      Position
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -434,25 +459,25 @@ const Attendance = () => {
                             <div className="flex-shrink-0 h-8 w-8">
                               <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
                                 <span className="text-xs font-medium text-gray-700">
-                                  {getStudentName(record).split(' ').map(n => n.charAt(0)).join('').substring(0, 2)}
+                                  {getEmployeeName(record).split(' ').map(n => n.charAt(0)).join('').substring(0, 2)}
                                 </span>
                               </div>
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {getStudentName(record)}
+                                {getEmployeeName(record)}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {getStudentId(record)}
+                          {getEmployeeId(record)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {getStudentClass(record)}
+                          {getEmployeeDepartment(record)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {getStudentSection(record)}
+                          {getEmployeePosition(record)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getStatusBadge(record.status)}

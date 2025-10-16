@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
-const studentSchema = new mongoose.Schema({
-  studentId: {
+const employeeSchema = new mongoose.Schema({
+  employeeId: {
     type: String,
-    required: [true, 'Student ID is required'],
+    required: [true, 'Employee ID is required'],
     unique: true,
     trim: true,
     uppercase: true,
-    match: [/^[A-Z0-9]+$/, 'Student ID can only contain letters and numbers']
+    match: [/^[A-Z0-9]+$/, 'Employee ID can only contain letters and numbers']
   },
   firstName: {
     type: String,
@@ -35,19 +35,19 @@ const studentSchema = new mongoose.Schema({
     trim: true,
     match: [/^[\d\s\-\+\(\)]+$/, 'Please provide a valid phone number']
   },
-  class: {
+  department: {
     type: String,
-    required: [true, 'Class is required'],
+    required: [true, 'Department is required'],
     trim: true,
     uppercase: true
   },
-  section: {
+  position: {
     type: String,
     trim: true,
     uppercase: true,
-    default: 'A'
+    default: 'STAFF'
   },
-  rollNumber: {
+  employeeNumber: {
     type: String,
     trim: true
   },
@@ -69,31 +69,31 @@ const studentSchema = new mongoose.Schema({
       default: 'USA'
     }
   },
-  guardianName: {
+  emergencyContactName: {
     type: String,
-    required: [true, 'Guardian name is required'],
+    required: [true, 'Emergency contact name is required'],
     trim: true,
-    maxlength: [100, 'Guardian name cannot exceed 100 characters']
+    maxlength: [100, 'Emergency contact name cannot exceed 100 characters']
   },
-  guardianPhone: {
+  emergencyContactPhone: {
     type: String,
-    required: [true, 'Guardian phone is required'],
+    required: [true, 'Emergency contact phone is required'],
     trim: true,
-    match: [/^[\d\s\-\+\(\)]+$/, 'Please provide a valid guardian phone number']
+    match: [/^[\d\s\-\+\(\)]+$/, 'Please provide a valid emergency contact phone number']
   },
-  guardianEmail: {
+  emergencyContactEmail: {
     type: String,
     trim: true,
     lowercase: true,
     match: [
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      'Please provide a valid guardian email address'
+      'Please provide a valid emergency contact email address'
     ]
   },
-  guardianRelation: {
+  emergencyContactRelation: {
     type: String,
-    enum: ['parent', 'guardian', 'relative', 'other'],
-    default: 'parent'
+    enum: ['spouse', 'parent', 'sibling', 'relative', 'friend', 'other'],
+    default: 'spouse'
   },
   qrCode: {
     type: String,
@@ -112,32 +112,31 @@ const studentSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  enrollmentDate: {
+  hireDate: {
     type: Date,
     default: Date.now,
     required: true
   },
-  graduationDate: {
+  terminationDate: {
     type: Date
   },
-  emergencyContact: {
+  secondaryEmergencyContact: {
     name: String,
     phone: String,
     relation: String
   },
-  medicalInfo: {
-    allergies: [String],
-    medications: [String],
-    conditions: [String],
-    bloodType: String,
-    doctorName: String,
-    doctorPhone: String
-  },
-  academicInfo: {
-    previousSchool: String,
-    transferDate: Date,
-    gpa: Number,
-    specialNeeds: String
+  workInfo: {
+    manager: String,
+    startTime: String,
+    endTime: String,
+    workSchedule: [String], // ['Monday', 'Tuesday', etc.]
+    employmentType: {
+      type: String,
+      enum: ['full-time', 'part-time', 'contract', 'intern'],
+      default: 'full-time'
+    },
+    salary: Number,
+    benefits: [String]
   },
   attendanceStats: {
     totalDays: {
@@ -172,28 +171,28 @@ const studentSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-studentSchema.index({ studentId: 1 });
-studentSchema.index({ class: 1, section: 1 });
-studentSchema.index({ isActive: 1 });
-studentSchema.index({ enrollmentDate: 1 });
-studentSchema.index({ guardianPhone: 1 });
-studentSchema.index({ qrCode: 1 });
+employeeSchema.index({ employeeId: 1 });
+employeeSchema.index({ department: 1, position: 1 });
+employeeSchema.index({ isActive: 1 });
+employeeSchema.index({ hireDate: 1 });
+employeeSchema.index({ emergencyContactPhone: 1 });
+employeeSchema.index({ qrCode: 1 });
 
-// Compound index for class and section queries
-studentSchema.index({ class: 1, section: 1, isActive: 1 });
+// Compound index for department and position queries
+employeeSchema.index({ department: 1, position: 1, isActive: 1 });
 
 // Virtual for full name
-studentSchema.virtual('fullName').get(function() {
+employeeSchema.virtual('fullName').get(function() {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Virtual for display name (Last, First)
-studentSchema.virtual('displayName').get(function() {
+employeeSchema.virtual('displayName').get(function() {
   return `${this.lastName}, ${this.firstName}`;
 });
 
 // Virtual for age calculation
-studentSchema.virtual('age').get(function() {
+employeeSchema.virtual('age').get(function() {
   if (!this.dateOfBirth) return null;
   const today = new Date();
   const birthDate = new Date(this.dateOfBirth);
@@ -207,25 +206,25 @@ studentSchema.virtual('age').get(function() {
   return age;
 });
 
-// Virtual for class section display
-studentSchema.virtual('classSection').get(function() {
-  return `${this.class}-${this.section}`;
+// Virtual for department position display
+employeeSchema.virtual('departmentPosition').get(function() {
+  return `${this.department}-${this.position}`;
 });
 
 // Pre-save middleware to generate QR code data
-studentSchema.pre('save', async function(next) {
-  if (this.isNew || this.isModified('studentId') || this.isModified('firstName') || this.isModified('lastName')) {
+employeeSchema.pre('save', async function(next) {
+  if (this.isNew || this.isModified('employeeId') || this.isModified('firstName') || this.isModified('lastName')) {
     try {
       // Generate unique QR code
-      this.qrCode = `QR-${this.studentId}-${Date.now()}`;
+      this.qrCode = `QR-${this.employeeId}-${Date.now()}`;
       
-      // Create QR code data (encrypted student information)
+      // Create QR code data (encrypted employee information)
       const qrData = {
-        studentId: this.studentId,
+        employeeId: this.employeeId,
         name: this.fullName,
-        class: this.class,
-        section: this.section,
-        enrollmentDate: this.enrollmentDate,
+        department: this.department,
+        position: this.position,
+        hireDate: this.hireDate,
         timestamp: Date.now()
       };
       
@@ -240,7 +239,7 @@ studentSchema.pre('save', async function(next) {
 });
 
 // Pre-save middleware to update attendance percentage
-studentSchema.pre('save', function(next) {
+employeeSchema.pre('save', function(next) {
   if (this.attendanceStats.totalDays > 0) {
     this.attendanceStats.attendancePercentage = 
       (this.attendanceStats.presentDays / this.attendanceStats.totalDays) * 100;
@@ -248,34 +247,34 @@ studentSchema.pre('save', function(next) {
   next();
 });
 
-// Static method to find by class
-studentSchema.statics.findByClass = function(className, section = null) {
-  const query = { class: className, isActive: true };
-  if (section) query.section = section;
+// Static method to find by department
+employeeSchema.statics.findByDepartment = function(departmentName, position = null) {
+  const query = { department: departmentName, isActive: true };
+  if (position) query.position = position;
   return this.find(query).sort({ lastName: 1, firstName: 1 });
 };
 
-// Static method to find active students
-studentSchema.statics.findActive = function() {
+// Static method to find active employees
+employeeSchema.statics.findActive = function() {
   return this.find({ isActive: true }).sort({ lastName: 1, firstName: 1 });
 };
 
-// Static method to search students
-studentSchema.statics.searchStudents = function(searchTerm) {
+// Static method to search employees
+employeeSchema.statics.searchEmployees = function(searchTerm) {
   const regex = new RegExp(searchTerm, 'i');
   return this.find({
     isActive: true,
     $or: [
       { firstName: regex },
       { lastName: regex },
-      { studentId: regex },
-      { guardianName: regex }
+      { employeeId: regex },
+      { emergencyContactName: regex }
     ]
   }).sort({ lastName: 1, firstName: 1 });
 };
 
 // Instance method to update attendance stats
-studentSchema.methods.updateAttendanceStats = async function(attendanceType) {
+employeeSchema.methods.updateAttendanceStats = async function(attendanceType) {
   this.attendanceStats.totalDays += 1;
   
   switch (attendanceType) {
@@ -294,28 +293,28 @@ studentSchema.methods.updateAttendanceStats = async function(attendanceType) {
   return this.save();
 };
 
-// Instance method to get safe student data for QR code
-studentSchema.methods.getQRData = function() {
+// Instance method to get safe employee data for QR code
+employeeSchema.methods.getQRData = function() {
   return {
-    studentId: this.studentId,
+    employeeId: this.employeeId,
     name: this.fullName,
-    class: this.class,
-    section: this.section,
+    department: this.department,
+    position: this.position,
     qrCode: this.qrCode
   };
 };
 
 // Instance method to get contact information
-studentSchema.methods.getContactInfo = function() {
+employeeSchema.methods.getContactInfo = function() {
   return {
-    studentName: this.fullName,
-    guardianName: this.guardianName,
-    guardianPhone: this.guardianPhone,
-    guardianEmail: this.guardianEmail,
-    emergencyContact: this.emergencyContact
+    employeeName: this.fullName,
+    emergencyContactName: this.emergencyContactName,
+    emergencyContactPhone: this.emergencyContactPhone,
+    emergencyContactEmail: this.emergencyContactEmail,
+    secondaryEmergencyContact: this.secondaryEmergencyContact
   };
 };
 
-const Student = mongoose.model('Student', studentSchema);
+const Employee = mongoose.model('Employee', employeeSchema);
 
-module.exports = Student;
+module.exports = Employee;

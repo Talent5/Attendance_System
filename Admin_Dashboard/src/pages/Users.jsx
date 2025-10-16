@@ -181,7 +181,7 @@ const Users = () => {
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800';
-      case 'teacher': return 'bg-blue-100 text-blue-800';
+      case 'manager': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -219,7 +219,7 @@ const Users = () => {
   const getAvatarColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-red-500';
-      case 'teacher': return 'bg-blue-500';
+      case 'manager': return 'bg-blue-500';
       default: return 'bg-gray-500';
     }
   };
@@ -227,7 +227,7 @@ const Users = () => {
   // Calculate role statistics
   const roleStats = {
     admin: stats.byRole?.find(r => r._id === 'admin')?.count || 0,
-    teacher: stats.byRole?.find(r => r._id === 'teacher')?.count || 0
+    manager: stats.byRole?.find(r => r._id === 'manager')?.count || 0
   };
 
   // Check if current user is admin
@@ -320,8 +320,8 @@ const Users = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">Teachers</h3>
-              <p className="text-2xl font-bold text-purple-600">{loading ? '...' : roleStats.teacher}</p>
+              <h3 className="text-lg font-semibold text-gray-900">Managers</h3>
+              <p className="text-2xl font-bold text-purple-600">{loading ? '...' : roleStats.manager}</p>
             </div>
           </div>
         </div>
@@ -353,7 +353,7 @@ const Users = () => {
             >
               <option value="">All Roles</option>
               <option value="admin">Administrator</option>
-              <option value="teacher">Teacher</option>
+              <option value="manager">Manager</option>
             </select>
             
             <select 

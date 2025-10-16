@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Student } = require('../models');
+const { Employee } = require('../models');
 const QRService = require('../services/qrService');
 const { 
   authenticate,
@@ -17,18 +17,18 @@ const logger = require('../utils/logger');
 
 // Apply authentication to all routes
 router.use(authenticate);
-router.use(requireTeacherOrAdmin);
+router.use(requireTeacherOrAdmin); // Will be updated to requireManagerOrAdmin
 
-// @route   GET /api/students
-// @desc    Get all students with pagination and filtering
-// @access  Private/Teacher/Admin
+// @route   GET /api/employees
+// @desc    Get all employees with pagination and filtering
+// @access  Private/Manager/Admin
 router.get('/', async (req, res, next) => {
   try {
     const {
       page = 1,
       limit = 20,
-      class: className,
-      section,
+      department: departmentName,
+      position,
       search,
       isActive,
       sortBy = 'lastName',
@@ -38,15 +38,15 @@ router.get('/', async (req, res, next) => {
     // Build query
     const query = {};
     
-    if (className) query.class = className;
-    if (section) query.section = section;
+    if (departmentName) query.department = departmentName;
+    if (position) query.position = position;
     if (isActive !== undefined) query.isActive = isActive === 'true';
     if (search) {
       query.$or = [
         { firstName: { $regex: search, $options: 'i' } },
         { lastName: { $regex: search, $options: 'i' } },
-        { studentId: { $regex: search, $options: 'i' } },
-        { guardianName: { $regex: search, $options: 'i' } }
+        { employeeId: { $regex: search, $options: 'i' } },
+        { emergencyContactName: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -55,23 +55,23 @@ router.get('/', async (req, res, next) => {
     const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
 
     // Execute query
-    const [students, total] = await Promise.all([
-      Student.find(query)
+    const [employees, total] = await Promise.all([
+      Employee.find(query)
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit)),
-      Student.countDocuments(query)
+      Employee.countDocuments(query)
     ]);
 
     res.status(200).json({
       success: true,
       data: {
-        students,
+        employees,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / parseInt(limit)),
-          totalStudents: total,
-          hasNext: skip + students.length < total,
+          totalEmployees: total,
+          hasNext: skip + employees.length < total,
           hasPrev: parseInt(page) > 1
         }
       }
@@ -83,17 +83,17 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// @route   GET /api/students/stats
-// @desc    Get student statistics
-// @access  Private/Teacher/Admin
+// @route   GET /api/employees/stats
+// @desc    Get employee statistics
+// @access  Private/Manager/Admin
 router.get('/stats', async (req, res, next) => {
   try {
-    const stats = await Student.aggregate([
+    const stats = await Employee.aggregate([
       {
         $group: {
           _id: {
-            class: '$class',
-            section: '$section'
+            department: '$department',
+            position: '$position'
           },
           count: { $sum: 1 },
           active: { $sum: { $cond: ['$isActive', 1, 0] } },
@@ -102,34 +102,34 @@ router.get('/stats', async (req, res, next) => {
       },
       {
         $group: {
-          _id: '$_id.class',
-          sections: {
+          _id: '$_id.department',
+          positions: {
             $push: {
-              section: '$_id.section',
+              position: '$_id.position',
               count: '$count',
               active: '$active',
               avgAttendance: '$avgAttendance'
             }
           },
-          totalInClass: { $sum: '$count' },
-          totalActiveInClass: { $sum: '$active' }
+          totalInDepartment: { $sum: '$count' },
+          totalActiveInDepartment: { $sum: '$active' }
         }
       },
       { $sort: { _id: 1 } }
     ]);
 
-    const totalStudents = await Student.countDocuments();
-    const totalActive = await Student.countDocuments({ isActive: true });
+    const totalEmployees = await Employee.countDocuments();
+    const totalActive = await Employee.countDocuments({ isActive: true });
 
     res.status(200).json({
       success: true,
       data: {
-        totalStudents,
+        totalEmployees,
         totalActive,
-        totalInactive: totalStudents - totalActive,
-        byClass: stats,
-        recentEnrollments: await Student.countDocuments({
-          enrollmentDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+        totalInactive: totalEmployees - totalActive,
+        byDepartment: stats,
+        recentHires: await Employee.countDocuments({
+          hireDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
         })
       }
     });
@@ -140,17 +140,17 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
-// @route   GET /api/students/classes
-// @desc    Get list of all classes and sections
-// @access  Private/Teacher/Admin
-router.get('/classes', async (req, res, next) => {
+// @route   GET /api/employees/departments
+// @desc    Get list of all departments and positions
+// @access  Private/Manager/Admin
+router.get('/departments', async (req, res, next) => {
   try {
-    const classes = await Student.aggregate([
+    const departments = await Employee.aggregate([
       { $match: { isActive: true } },
       {
         $group: {
-          _id: '$class',
-          sections: { $addToSet: '$section' },
+          _id: '$department',
+          positions: { $addToSet: '$position' },
           count: { $sum: 1 }
         }
       },
@@ -159,34 +159,34 @@ router.get('/classes', async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: { classes }
+      data: { departments }
     });
 
   } catch (error) {
-    logger.error('Get classes error:', error);
+    logger.error('Get departments error:', error);
     next(error);
   }
 });
 
-// @route   GET /api/students/:id
-// @desc    Get single student by ID
-// @access  Private/Teacher/Admin
+// @route   GET /api/employees/:id
+// @desc    Get single employee by ID
+// @access  Private/Manager/Admin
 router.get('/:id', 
   validateObjectId('id'),
   async (req, res, next) => {
     try {
-      const student = await Student.findById(req.params.id);
+      const employee = await Employee.findById(req.params.id);
 
-      if (!student) {
+      if (!employee) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found' }
         });
       }
 
       res.status(200).json({
         success: true,
-        data: { student }
+        data: { employee }
       });
 
     } catch (error) {
@@ -196,51 +196,51 @@ router.get('/:id',
   }
 );
 
-// @route   POST /api/students
-// @desc    Create new student
-// @access  Private/Teacher/Admin
+// @route   POST /api/employees
+// @desc    Create new employee
+// @access  Private/Manager/Admin
 router.post('/',
-  validate(schemas.studentCreate),
+  validate(schemas.employeeCreate),
   async (req, res, next) => {
     try {
-      const studentData = req.body;
+      const employeeData = req.body;
 
-      console.log('Creating new student');
-      console.log('Student data:', JSON.stringify(studentData, null, 2));
+      console.log('Creating new employee');
+      console.log('Employee data:', JSON.stringify(employeeData, null, 2));
 
-      // Check if student ID already exists
-      const existingStudent = await Student.findOne({ studentId: studentData.studentId });
-      if (existingStudent) {
+      // Check if employee ID already exists
+      const existingEmployee = await Employee.findOne({ employeeId: employeeData.employeeId });
+      if (existingEmployee) {
         return res.status(400).json({
           success: false,
-          error: { message: 'Student ID already exists' }
+          error: { message: 'Employee ID already exists' }
         });
       }
 
-      // Create student
-      const student = new Student(studentData);
-      await student.save();
+      // Create employee
+      const employee = new Employee(employeeData);
+      await employee.save();
 
-      logger.info(`New student created: ${student.studentId} by user: ${req.user.email}`);
+      logger.info(`New employee created: ${employee.employeeId} by user: ${req.user.email}`);
 
       res.status(201).json({
         success: true,
         data: {
-          student,
-          message: 'Student created successfully'
+          employee,
+          message: 'Employee created successfully'
         }
       });
 
     } catch (error) {
-      logger.error('Create student error:', error);
+      logger.error('Create employee error:', error);
       next(error);
     }
   }
 );
 
-// @route   PUT /api/students/:id
-// @desc    Update student
-// @access  Private/Teacher/Admin
+// @route   PUT /api/employees/:id
+// @desc    Update employee
+// @access  Private/Manager/Admin
 router.put('/:id',
   validateObjectId('id'),
   validate(schemas.studentUpdate),
@@ -249,41 +249,41 @@ router.put('/:id',
       const { id } = req.params;
       const updates = req.body;
 
-      console.log('Updating student:', id);
+      console.log('Updating employee:', id);
       console.log('Update data:', JSON.stringify(updates, null, 2));
 
-      const student = await Student.findByIdAndUpdate(
+      const employee = await Employee.findByIdAndUpdate(
         id,
         updates,
         { new: true, runValidators: true }
       );
 
-      if (!student) {
+      if (!employee) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found' }
         });
       }
 
-      logger.info(`Student updated: ${student.studentId} by user: ${req.user.email}`, { updates });
+      logger.info(`Employee updated: ${employee.employeeId} by user: ${req.user.email}`, { updates });
 
       res.status(200).json({
         success: true,
         data: {
-          student,
-          message: 'Student updated successfully'
+          employee,
+          message: 'Employee updated successfully'
         }
       });
 
     } catch (error) {
-      logger.error('Update student error:', error);
+      logger.error('Update employee error:', error);
       next(error);
     }
   }
 );
 
-// @route   DELETE /api/students/:id
-// @desc    Delete student (soft delete)
+// @route   DELETE /api/employees/:id
+// @desc    Delete employee (soft delete)
 // @access  Private/Admin
 router.delete('/:id',
   requireAdmin,
@@ -292,65 +292,65 @@ router.delete('/:id',
     try {
       const { id } = req.params;
 
-      const student = await Student.findById(id);
-      if (!student) {
+      const employee = await Employee.findById(id);
+      if (!employee) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found' }
         });
       }
 
-      // Soft delete - deactivate student
-      student.isActive = false;
-      await student.save();
+      // Soft delete - deactivate employee
+      employee.isActive = false;
+      await employee.save();
 
-      logger.info(`Student soft deleted: ${student.studentId} by admin: ${req.user.email}`);
+      logger.info(`Employee soft deleted: ${employee.employeeId} by admin: ${req.user.email}`);
 
       res.status(200).json({
         success: true,
-        data: { message: 'Student deleted successfully' }
+        data: { message: 'Employee deleted successfully' }
       });
 
     } catch (error) {
-      logger.error('Delete student error:', error);
+      logger.error('Delete employee error:', error);
       next(error);
     }
   }
 );
 
-// @route   GET /api/students/:id/qr
-// @desc    Get QR code for student
-// @access  Private/Teacher/Admin
+// @route   GET /api/employees/:id/qr
+// @desc    Get QR code for employee
+// @access  Private/Manager/Admin
 router.get('/:id/qr',
   validateObjectId('id'),
   async (req, res, next) => {
     try {
-      const student = await Student.findById(req.params.id);
+      const employee = await Employee.findById(req.params.id);
 
-      if (!student) {
+      if (!employee) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found' }
         });
       }
 
-      if (!student.isActive) {
+      if (!employee.isActive) {
         return res.status(400).json({
           success: false,
-          error: { message: 'Cannot generate QR code for inactive student' }
+          error: { message: 'Cannot generate QR code for inactive employee' }
         });
       }
 
       // Generate QR code image
-      const qrCodeImage = await QRService.generateQRCode(student.qrCodeData);
+      const qrCodeImage = await QRService.generateQRCode(employee.qrCodeData);
 
       res.status(200).json({
         success: true,
         data: {
-          qrCode: student.qrCode,
-          qrCodeData: student.qrCodeData,
+          qrCode: employee.qrCode,
+          qrCodeData: employee.qrCodeData,
           qrCodeImage,
-          student: student.getQRData()
+          employee: employee.getQRData()
         }
       });
 
@@ -361,38 +361,38 @@ router.get('/:id/qr',
   }
 );
 
-// @route   POST /api/students/:id/regenerate-qr
-// @desc    Regenerate QR code for student
+// @route   POST /api/employees/:id/regenerate-qr
+// @desc    Regenerate QR code for employee
 // @access  Private/Admin
 router.post('/:id/regenerate-qr',
   requireAdmin,
   validateObjectId('id'),
   async (req, res, next) => {
     try {
-      const student = await Student.findById(req.params.id);
+      const employee = await Employee.findById(req.params.id);
 
-      if (!student) {
+      if (!employee) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found' }
         });
       }
 
       // Regenerate QR code by triggering pre-save middleware
-      student.qrCode = undefined;
-      student.qrCodeData = undefined;
-      await student.save();
+      employee.qrCode = undefined;
+      employee.qrCodeData = undefined;
+      await employee.save();
 
       // Generate new QR code image
-      const qrCodeImage = await QRService.generateQRCode(student.qrCodeData);
+      const qrCodeImage = await QRService.generateQRCode(employee.qrCodeData);
 
-      logger.info(`QR code regenerated for student: ${student.studentId} by admin: ${req.user.email}`);
+      logger.info(`QR code regenerated for employee: ${employee.employeeId} by admin: ${req.user.email}`);
 
       res.status(200).json({
         success: true,
         data: {
-          qrCode: student.qrCode,
-          qrCodeData: student.qrCodeData,
+          qrCode: employee.qrCode,
+          qrCodeData: employee.qrCodeData,
           qrCodeImage,
           message: 'QR code regenerated successfully'
         }
@@ -405,9 +405,9 @@ router.post('/:id/regenerate-qr',
   }
 );
 
-// @route   POST /api/students/:id/upload-photo
-// @desc    Upload profile photo for student
-// @access  Private/Teacher/Admin
+// @route   POST /api/employees/:id/upload-photo
+// @desc    Upload profile photo for employee
+// @access  Private/Manager/Admin
 router.post('/:id/upload-photo',
   validateObjectId('id'),
   profilePhotoUpload.single('photo'),
@@ -424,25 +424,25 @@ router.post('/:id/upload-photo',
         });
       }
 
-      const student = await Student.findById(id);
-      if (!student) {
+      const employee = await Employee.findById(id);
+      if (!employee) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found' }
         });
       }
 
-      // Update student with photo path
+      // Update employee with photo path
       const photoPath = `profiles/${req.file.filename}`;
-      student.profilePhoto = photoPath;
-      await student.save();
+      employee.profilePhoto = photoPath;
+      await employee.save();
 
-      logger.info(`Profile photo uploaded for student: ${student.studentId}`);
+      logger.info(`Profile photo uploaded for employee: ${employee.employeeId}`);
 
       res.status(200).json({
         success: true,
         data: {
-          student,
+          employee,
           photoUrl: `/uploads/${photoPath}`,
           message: 'Profile photo uploaded successfully'
         }

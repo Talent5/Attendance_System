@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react';
 
-const StudentForm = ({ student, onSubmit, onCancel }) => {
+const EmployeeForm = ({ employee, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
-    // Student Information
+    // Employee Information
     firstName: '',
     lastName: '',
     email: '',
-    studentId: '',
-    class: '',
-    section: 'A',
-    rollNumber: '',
+    employeeId: '',
+    department: '',
+    position: 'STAFF',
+    employeeNumber: '',
     phoneNumber: '',
     dateOfBirth: '',
     gender: '',
     
-    // Guardian/Parent Information
-    guardianName: '',
-    guardianPhone: '',
-    guardianEmail: '',
-    guardianRelation: 'parent',
+    // Emergency Contact Information
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    emergencyContactEmail: '',
+    emergencyContactRelation: 'spouse',
     
     // Address Information
     address: {
@@ -37,52 +37,52 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (student) {
+    if (employee) {
       setFormData({
-        firstName: student.firstName || '',
-        lastName: student.lastName || '',
-        email: student.email || '',
-        studentId: student.studentId || '',
-        class: student.class || '',
-        section: student.section || 'A',
-        rollNumber: student.rollNumber || '',
-        phoneNumber: student.phoneNumber || '',
-        dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().split('T')[0] : '',
-        gender: student.gender || '',
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        email: employee.email || '',
+        employeeId: employee.employeeId || '',
+        department: employee.department || '',
+        position: employee.position || 'STAFF',
+        employeeNumber: employee.employeeNumber || '',
+        phoneNumber: employee.phoneNumber || '',
+        dateOfBirth: employee.dateOfBirth ? new Date(employee.dateOfBirth).toISOString().split('T')[0] : '',
+        gender: employee.gender || '',
         
-        guardianName: student.guardianName || '',
-        guardianPhone: student.guardianPhone || '',
-        guardianEmail: student.guardianEmail || '',
-        guardianRelation: student.guardianRelation || 'parent',
+        emergencyContactName: employee.emergencyContactName || '',
+        emergencyContactPhone: employee.emergencyContactPhone || '',
+        emergencyContactEmail: employee.emergencyContactEmail || '',
+        emergencyContactRelation: employee.emergencyContactRelation || 'spouse',
         
         address: {
-          street: student.address?.street || '',
-          city: student.address?.city || '',
-          state: student.address?.state || '',
-          zipCode: student.address?.zipCode || '',
-          country: student.address?.country || 'USA'
+          street: employee.address?.street || '',
+          city: employee.address?.city || '',
+          state: employee.address?.state || '',
+          zipCode: employee.address?.zipCode || '',
+          country: employee.address?.country || 'USA'
         },
         
-        notes: student.notes || ''
+        notes: employee.notes || ''
       });
     }
-  }, [student]);
+  }, [employee]);
 
   const validateForm = () => {
     const newErrors = {};
 
-    // Student Information Validation
+    // Employee Information Validation
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
     }
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
     }
-    if (!formData.studentId.trim()) {
-      newErrors.studentId = 'Student ID is required';
+    if (!formData.employeeId.trim()) {
+      newErrors.employeeId = 'Employee ID is required';
     }
-    if (!formData.class.trim()) {
-      newErrors.class = 'Class is required';
+    if (!formData.department.trim()) {
+      newErrors.department = 'Department is required';
     }
 
     // Email validation (optional)
@@ -95,19 +95,19 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
       newErrors.phoneNumber = 'Please enter a valid phone number';
     }
 
-    // Guardian Information Validation
-    if (!formData.guardianName.trim()) {
-      newErrors.guardianName = 'Guardian name is required';
+    // Emergency Contact Information Validation
+    if (!formData.emergencyContactName.trim()) {
+      newErrors.emergencyContactName = 'Emergency contact name is required';
     }
-    if (!formData.guardianPhone.trim()) {
-      newErrors.guardianPhone = 'Guardian phone is required';
-    } else if (!/^[\d\s\-+()]+$/.test(formData.guardianPhone)) {
-      newErrors.guardianPhone = 'Please enter a valid guardian phone number';
+    if (!formData.emergencyContactPhone.trim()) {
+      newErrors.emergencyContactPhone = 'Emergency contact phone is required';
+    } else if (!/^[\d\s\-+()]+$/.test(formData.emergencyContactPhone)) {
+      newErrors.emergencyContactPhone = 'Please enter a valid emergency contact phone number';
     }
 
-    // Guardian email validation (optional)
-    if (formData.guardianEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guardianEmail)) {
-      newErrors.guardianEmail = 'Please enter a valid guardian email address';
+    // Emergency contact email validation (optional)
+    if (formData.emergencyContactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.emergencyContactEmail)) {
+      newErrors.emergencyContactEmail = 'Please enter a valid emergency contact email address';
     }
 
     setErrors(newErrors);
@@ -154,16 +154,17 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email || undefined,
-        class: formData.class,
-        section: formData.section,
-        rollNumber: formData.rollNumber || undefined,
+        employeeId: formData.employeeId,
+        department: formData.department,
+        position: formData.position,
+        employeeNumber: formData.employeeNumber || undefined,
         phoneNumber: formData.phoneNumber || undefined,
         dateOfBirth: formData.dateOfBirth || undefined,
         gender: formData.gender || undefined,
-        guardianName: formData.guardianName,
-        guardianPhone: formData.guardianPhone,
-        guardianEmail: formData.guardianEmail || undefined,
-        guardianRelation: formData.guardianRelation,
+        emergencyContactName: formData.emergencyContactName,
+        emergencyContactPhone: formData.emergencyContactPhone,
+        emergencyContactEmail: formData.emergencyContactEmail || undefined,
+        emergencyContactRelation: formData.emergencyContactRelation,
         address: formData.address,
         notes: formData.notes || undefined
       };
@@ -181,7 +182,7 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
     }
   };
 
-  const isEditMode = !!student;
+  const isEditMode = !!employee;
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
@@ -191,19 +192,19 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
             </svg>
-            {isEditMode ? 'Edit Student' : 'Add New Student'}
+            {isEditMode ? 'Edit Employee' : 'Add New Employee'}
           </h3>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-8">
-            {/* Student Information Section */}
+            {/* Employee Information Section */}
             <div>
               <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
-                Student Information
+                Employee Information
               </h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,21 +244,21 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Student ID <span className="text-red-500">*</span>
+                    Employee ID <span className="text-red-500">*</span>
                     {isEditMode && <span className="text-sm text-gray-500 ml-2">(cannot be changed)</span>}
                   </label>
                   <input
                     type="text"
-                    name="studentId"
-                    value={formData.studentId}
+                    name="employeeId"
+                    value={formData.employeeId}
                     onChange={handleChange}
                     disabled={isEditMode}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.studentId ? 'border-red-500' : 'border-gray-300'
+                      errors.employeeId ? 'border-red-500' : 'border-gray-300'
                     } ${isEditMode ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    placeholder="ST001"
+                    placeholder="EMP001"
                   />
-                  {errors.studentId && <p className="mt-1 text-sm text-red-600">{errors.studentId}</p>}
+                  {errors.employeeId && <p className="mt-1 text-sm text-red-600">{errors.employeeId}</p>}
                 </div>
 
                 <div>
@@ -272,60 +273,63 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
                       errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="student@example.com"
+                    placeholder="employee@company.com"
                   />
                   {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Class <span className="text-red-500">*</span>
+                    Department <span className="text-red-500">*</span>
                   </label>
                   <select
-                    name="class"
-                    value={formData.class}
+                    name="department"
+                    value={formData.department}
                     onChange={handleChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.class ? 'border-red-500' : 'border-gray-300'
+                      errors.department ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
-                    <option value="">Select Class</option>
-                    <option value="9">Grade 9</option>
-                    <option value="10">Grade 10</option>
-                    <option value="11">Grade 11</option>
-                    <option value="12">Grade 12</option>
+                    <option value="">Select Department</option>
+                    <option value="HR">Human Resources</option>
+                    <option value="IT">Information Technology</option>
+                    <option value="FINANCE">Finance</option>
+                    <option value="MARKETING">Marketing</option>
+                    <option value="OPERATIONS">Operations</option>
+                    <option value="SALES">Sales</option>
                   </select>
-                  {errors.class && <p className="mt-1 text-sm text-red-600">{errors.class}</p>}
+                  {errors.department && <p className="mt-1 text-sm text-red-600">{errors.department}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Section
+                    Position
                   </label>
                   <select
-                    name="section"
-                    value={formData.section}
+                    name="position"
+                    value={formData.position}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   >
-                    <option value="A">Section A</option>
-                    <option value="B">Section B</option>
-                    <option value="C">Section C</option>
-                    <option value="D">Section D</option>
+                    <option value="STAFF">Staff</option>
+                    <option value="SENIOR_STAFF">Senior Staff</option>
+                    <option value="SUPERVISOR">Supervisor</option>
+                    <option value="MANAGER">Manager</option>
+                    <option value="DIRECTOR">Director</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Roll Number
+                    Employee Number
                   </label>
                   <input
                     type="text"
-                    name="rollNumber"
-                    value={formData.rollNumber}
+                    name="employeeNumber"
+                    value={formData.employeeNumber}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-                    placeholder="Enter roll number"
+                    placeholder="Enter employee number"
                   />
                 </div>
 
@@ -378,65 +382,65 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
               </div>
             </div>
 
-            {/* Guardian/Parent Information Section */}
+            {/* Emergency Contact Information Section */}
             <div>
               <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                 <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                 </svg>
-                Guardian/Parent Information
+                Emergency Contact Information
               </h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Guardian Name <span className="text-red-500">*</span>
+                    Emergency Contact Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    name="guardianName"
-                    value={formData.guardianName}
+                    name="emergencyContactName"
+                    value={formData.emergencyContactName}
                     onChange={handleChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.guardianName ? 'border-red-500' : 'border-gray-300'
+                      errors.emergencyContactName ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="Enter guardian's full name"
+                    placeholder="Enter emergency contact's full name"
                   />
-                  {errors.guardianName && <p className="mt-1 text-sm text-red-600">{errors.guardianName}</p>}
+                  {errors.emergencyContactName && <p className="mt-1 text-sm text-red-600">{errors.emergencyContactName}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Guardian Phone <span className="text-red-500">*</span>
+                    Emergency Contact Phone <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
-                    name="guardianPhone"
-                    value={formData.guardianPhone}
+                    name="emergencyContactPhone"
+                    value={formData.emergencyContactPhone}
                     onChange={handleChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.guardianPhone ? 'border-red-500' : 'border-gray-300'
+                      errors.emergencyContactPhone ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="+1 (555) 123-4567"
                   />
-                  {errors.guardianPhone && <p className="mt-1 text-sm text-red-600">{errors.guardianPhone}</p>}
+                  {errors.emergencyContactPhone && <p className="mt-1 text-sm text-red-600">{errors.emergencyContactPhone}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Guardian Email
+                    Emergency Contact Email
                   </label>
                   <input
                     type="email"
-                    name="guardianEmail"
-                    value={formData.guardianEmail}
+                    name="emergencyContactEmail"
+                    value={formData.emergencyContactEmail}
                     onChange={handleChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      errors.guardianEmail ? 'border-red-500' : 'border-gray-300'
+                      errors.emergencyContactEmail ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="guardian@example.com"
+                    placeholder="contact@example.com"
                   />
-                  {errors.guardianEmail && <p className="mt-1 text-sm text-red-600">{errors.guardianEmail}</p>}
+                  {errors.emergencyContactEmail && <p className="mt-1 text-sm text-red-600">{errors.emergencyContactEmail}</p>}
                 </div>
 
                 <div>
@@ -444,14 +448,15 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
                     Relationship
                   </label>
                   <select
-                    name="guardianRelation"
-                    value={formData.guardianRelation}
+                    name="emergencyContactRelation"
+                    value={formData.emergencyContactRelation}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   >
+                    <option value="spouse">Spouse</option>
                     <option value="parent">Parent</option>
-                    <option value="guardian">Guardian</option>
-                    <option value="relative">Relative</option>
+                    <option value="sibling">Sibling</option>
+                    <option value="friend">Friend</option>
                     <option value="other">Other</option>
                   </select>
                 </div>
@@ -592,7 +597,7 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
                   {isEditMode ? 'Updating...' : 'Creating...'}
                 </span>
               ) : (
-                isEditMode ? 'Update Student' : 'Create Student'
+                isEditMode ? 'Update Employee' : 'Create Employee'
               )}
             </button>
           </div>
@@ -602,4 +607,4 @@ const StudentForm = ({ student, onSubmit, onCancel }) => {
   );
 };
 
-export default StudentForm;
+export default EmployeeForm;

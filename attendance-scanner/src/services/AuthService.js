@@ -5,6 +5,11 @@ import config from '../config/config';
 // Base URL for the backend API
 const BASE_URL = config.API_BASE_URL;
 
+// Log configuration on module load
+console.log('🔧 AuthService initialized');
+console.log(`📱 Environment: ${config.ENV_MODE}`);
+console.log(`🌐 API Base URL: ${BASE_URL}`);
+
 class AuthService {
   constructor() {
     this.api = axios.create({

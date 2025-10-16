@@ -38,11 +38,11 @@ const Header = ({ onToggleSidebar }) => {
         {/* Page title and breadcrumbs */}
         <div className="flex-1 flex items-center">
           <h1 className="text-xl font-semibold text-gray-900 lg:ml-0 ml-4">
-            EduTrack Admin
+            WorkTrack Admin
           </h1>
           <span className="hidden md:inline-block mx-2 text-gray-400">•</span>
           <span className="hidden md:inline-block text-sm text-gray-500">
-            School Management System
+            Employee Attendance Management System
           </span>
         </div>
 

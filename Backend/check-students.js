@@ -7,7 +7,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/qr-attend
   useUnifiedTopology: true
 });
 
-const { Student, Attendance } = require('./models');
+const { Employee, Attendance } = require('./models');
 
 async function checkStudentData() {
   try {

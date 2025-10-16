@@ -28,10 +28,10 @@ ChartJS.register(
 
 const Reports = () => {
   const [stats, setStats] = useState({
-    totalStudents: 0,
+    totalEmployees: 0,
     averageAttendance: 0,
-    classesToday: 0,
-    activeTeachers: 0
+    shiftsToday: 0,
+    activeManagers: 0
   });
   const [recentReports, setRecentReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -283,8 +283,8 @@ const Reports = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">Total Students</h3>
-              <p className="text-2xl font-bold text-blue-600">{stats.totalStudents.toLocaleString()}</p>
+              <h3 className="text-lg font-semibold text-gray-900">Total Employees</h3>
+              <p className="text-2xl font-bold text-blue-600">{stats.totalEmployees.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -312,7 +312,7 @@ const Reports = () => {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">Attendance Today</h3>
-              <p className="text-2xl font-bold text-yellow-600">{stats.classesToday}</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.shiftsToday}</p>
             </div>
           </div>
         </div>
@@ -326,7 +326,7 @@ const Reports = () => {
             </div>
             <div className="ml-4">
               <h3 className="text-lg font-semibold text-gray-900">Active Teachers</h3>
-              <p className="text-2xl font-bold text-purple-600">{stats.activeTeachers}</p>
+              <p className="text-2xl font-bold text-purple-600">{stats.activeManagers}</p>
             </div>
           </div>
         </div>

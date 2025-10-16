@@ -211,8 +211,8 @@ const DashboardScreen = ({ navigation }) => {
 
   // Render attendance item
   const renderAttendanceItem = ({ item }) => {
-    // Handle different possible data structures from backend
-    const student = item.student || item.studentId || {};
+    // Handle different possible data structures from backend (employee or student)
+    const person = item.employee || item.student || item.employeeId || item.studentId || {};
     const scanTime = new Date(item.scanTime);
     const timeString = scanTime.toLocaleTimeString([], { 
       hour: '2-digit', 
@@ -238,18 +238,18 @@ const DashboardScreen = ({ navigation }) => {
 
     return (
       <View style={styles.attendanceItem}>
-        <View style={styles.studentInfo}>
+        <View style={styles.employeeInfo}>
           <Text style={styles.studentName}>
-            {student.firstName && student.lastName 
-              ? `${student.firstName} ${student.lastName}`
-              : 'Unknown Student'
+            {person.firstName && person.lastName 
+              ? `${person.firstName} ${person.lastName}`
+              : 'Unknown Person'
             }
           </Text>
           <Text style={styles.studentId}>
-            ID: {student.studentId || 'N/A'}
+            ID: {person.employeeId || person.studentId || 'N/A'}
           </Text>
           <Text style={styles.classInfo}>
-            {student.class || 'N/A'} - {student.section || 'N/A'}
+            {person.department || person.class || 'N/A'} - {person.position || person.section || 'N/A'}
           </Text>
           {item.location && (
             <Text style={styles.locationInfo}>

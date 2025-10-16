@@ -42,7 +42,7 @@ async function testFrontendQuery() {
       { $match: query },
       {
         $lookup: {
-          from: 'students',
+          from: 'employees',
           localField: 'studentId',
           foreignField: '_id',
           as: 'student'

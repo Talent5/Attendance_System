@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { studentService } from '../services/studentService';
+import { employeeService } from '../services/employeeService';
+
+// Compatibility layer
+const studentService = {
+  getAllStudents: (params) => employeeService.getAllEmployees(params),
+};
 import { attendanceService } from '../services/attendanceService';
 import QRScanner from '../components/QRScanner';
 
@@ -61,10 +66,10 @@ const Dashboard = () => {
         .map(record => ({
           id: record._id,
           type: 'attendance',
-          message: `${record.studentId?.firstName || 'Unknown'} ${record.studentId?.lastName || 'Student'} checked in`,
+          message: `${record.employeeId?.firstName || 'Unknown'} ${record.employeeId?.lastName || 'Employee'} checked in`,
           time: new Date(record.scanTime).toLocaleTimeString(),
           status: record.status,
-          class: record.studentId?.class,
+          department: record.employeeId?.department,
           timeWindow: record.timeWindow,
           minutesLate: record.minutesLate
         }));
@@ -109,7 +114,7 @@ const Dashboard = () => {
       // Add to today's attendance list
       const newAttendanceRecord = {
         ...result.attendance,
-        studentId: result.student
+        employeeId: result.student
       };
       setTodayAttendance(prev => [newAttendanceRecord, ...prev]);
       
@@ -120,7 +125,7 @@ const Dashboard = () => {
         message: `${result.student.firstName} ${result.student.lastName} checked in`,
         time: new Date().toLocaleTimeString(),
         status: result.attendance.status,
-        class: result.student.class,
+        department: result.student.department,
         timeWindow: result.attendance.timeWindow,
         minutesLate: result.attendance.minutesLate
       };
@@ -235,9 +240,9 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4 mb-8">
         <StatCard
-          title="Total Students"
+          title="Total Employees"
           value={stats.totalStudents}
-          trend="All enrolled students"
+          trend="All active employees"
           icon={
             <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
@@ -300,7 +305,7 @@ const Dashboard = () => {
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd"/>
               </svg>
-              Add New Student
+              Add New Employee
             </button>
             <button 
               onClick={handleGenerateReports}
@@ -540,10 +545,10 @@ const Dashboard = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Student
+                      Employee
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Class
+                      Department
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -567,23 +572,23 @@ const Dashboard = () => {
                           <div className="flex-shrink-0 h-10 w-10">
                             <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                               <span className="text-sm font-medium text-gray-700">
-                                {record.studentId?.firstName?.charAt(0) || '?'}{record.studentId?.lastName?.charAt(0) || ''}
+                                {record.employeeId?.firstName?.charAt(0) || '?'}{record.employeeId?.lastName?.charAt(0) || ''}
                               </span>
                             </div>
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">
-                              {record.studentId?.firstName || 'Unknown'} {record.studentId?.lastName || 'Student'}
+                              {record.employeeId?.firstName || 'Unknown'} {record.employeeId?.lastName || 'Employee'}
                             </div>
                             <div className="text-sm text-gray-500">
-                              ID: {record.studentId?.studentId || 'N/A'}
+                              ID: {record.employeeId?.employeeId || 'N/A'}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{record.studentId?.class || 'N/A'}</div>
-                        <div className="text-sm text-gray-500">Section: {record.studentId?.section || 'N/A'}</div>
+                        <div className="text-sm text-gray-900">{record.employeeId?.department || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">Position: {record.employeeId?.position || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

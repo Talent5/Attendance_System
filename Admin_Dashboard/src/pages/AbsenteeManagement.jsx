@@ -271,7 +271,7 @@ const AbsenteeManagement = () => {
           </h2>
           {statistics ? (
             <div className="space-y-2">
-              <p className="text-sm text-gray-600"><strong>Total Students:</strong> {statistics.totalStudents}</p>
+              <p className="text-sm text-gray-600"><strong>Total Employees:</strong> {statistics.totalStudents}</p>
               <p className="text-sm text-gray-600">
                 <strong>Average Attendance:</strong> {
                   statistics.statistics.length > 0 

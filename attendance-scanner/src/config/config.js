@@ -1,10 +1,19 @@
 // Configuration file for the mobile app
+import Constants from 'expo-constants';
+
+// Determine environment more reliably
+const IS_DEV = process.env.NODE_ENV === 'development' || process.env.EXPO_PUBLIC_ENV === 'development';
+
 const config = {
   // Backend API base URL
   // Change this to match your backend server
-  API_BASE_URL: __DEV__ 
-    ? 'http://192.168.0.49:5000' // Development - backend server running on port 5000
-    : 'https://attendance-system-sktv.onrender.com', // Production
+  API_BASE_URL: IS_DEV 
+    ? 'http://10.90.170.108:5000' // Development - backend server running on port 5000
+    : 'https://attendance-system-sktv.onrender.com', // Production,
+  
+  // Environment info (for debugging)
+  IS_DEV,
+  ENV_MODE: IS_DEV ? 'DEVELOPMENT' : 'PRODUCTION',
   
   // API timeout in milliseconds
   API_TIMEOUT: 15000,

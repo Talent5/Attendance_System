@@ -1,79 +1,80 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { studentService } from '../services/studentService';
-import StudentForm from '../components/StudentForm';
+import { employeeService } from '../services/employeeService';
+
+import EmployeeForm from '../components/EmployeeForm';
 import PrintIdCard from '../components/PrintIdCard';
 
-const Students = () => {
+const Employees = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [students, setStudents] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   useEffect(() => {
-    fetchStudents();
+    fetchEmployees();
     
-    // Check if we should open the add student form
+    // Check if we should open the add employee form
     const action = searchParams.get('action');
     if (action === 'add') {
-      setEditingStudent(null);
+      setEditingEmployee(null);
       setShowForm(true);
       // Remove the action parameter from URL after handling it
       setSearchParams({});
     }
   }, [searchParams, setSearchParams]);
 
-  const fetchStudents = async () => {
+  const fetchEmployees = async () => {
     try {
-      const data = await studentService.getAllStudents();
-      setStudents(data);
+      const data = await employeeService.getAllEmployees();
+      setEmployees(data);
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('Error fetching employees:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddStudent = () => {
-    setEditingStudent(null);
+  const handleAddEmployee = () => {
+    setEditingEmployee(null);
     setShowForm(true);
   };
 
-  const handleEditStudent = (student) => {
-    setEditingStudent(student);
+  const handleEditEmployee = (employee) => {
+    setEditingEmployee(employee);
     setShowForm(true);
   };
 
-  const handleDeleteStudent = async (id) => {
-    if (window.confirm('Are you sure you want to delete this student?')) {
+  const handleDeleteEmployee = async (id) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
       try {
-        await studentService.deleteStudent(id);
-        fetchStudents();
+        await employeeService.deleteEmployee(id);
+        fetchEmployees();
       } catch (error) {
-        console.error('Error deleting student:', error);
+        console.error('Error deleting employee:', error);
       }
     }
   };
 
-  const handlePrintId = (student) => {
-    setSelectedStudent(student);
+  const handlePrintId = (employee) => {
+    setSelectedEmployee(employee);
     setShowPrintModal(true);
   };
 
-  const handleFormSubmit = async (studentData) => {
+  const handleFormSubmit = async (employeeData) => {
     try {
-      if (editingStudent) {
-        await studentService.updateStudent(editingStudent._id, studentData);
+      if (editingEmployee) {
+        await employeeService.updateEmployee(editingEmployee._id, employeeData);
       } else {
-        await studentService.createStudent(studentData);
+        await employeeService.createEmployee(employeeData);
       }
       setShowForm(false);
-      fetchStudents();
+      fetchEmployees();
     } catch (error) {
-      console.error('Error saving student:', error);
+      console.error('Error saving employee:', error);
     }
   };
 
@@ -95,31 +96,31 @@ const Students = () => {
               <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
               </svg>
-              Student Management
+              Employee Management
             </h1>
             <p className="mt-2 text-blue-100">
-              Manage student records and generate ID cards
+              Manage employee records and generate ID cards
             </p>
           </div>
           <div className="mt-4 sm:mt-0">
             <button
               type="button"
-              onClick={handleAddStudent}
+              onClick={handleAddEmployee}
               className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-lg transition-all duration-200"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
               </svg>
-              Add New Student
+              Add New Employee
             </button>
           </div>
         </div>
       </div>
       
-      {/* Students Table */}
+      {/* Employees Table */}
       <div className="bg-white shadow-lg rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">All Students ({students.length})</h3>
+          <h3 className="text-lg font-medium text-gray-900">All Employees ({employees.length})</h3>
         </div>
         
         <div className="overflow-x-auto">
@@ -127,13 +128,13 @@ const Students = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student
+                  Employee
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Student ID
+                  Employee ID
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Class
+                  Department
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contact
@@ -144,40 +145,40 @@ const Students = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {students.map((student) => (
-                <tr key={student._id} className="hover:bg-gray-50 transition-colors duration-150">
+              {employees.map((employee) => (
+                <tr key={employee._id} className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-12 w-12 flex-shrink-0">
                         <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-lg">
                           <span className="text-lg font-semibold text-white">
-                            {(student.firstName || '').charAt(0)}
+                            {(employee.firstName || '').charAt(0)}
                           </span>
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{`${student.firstName} ${student.lastName}`}</div>
-                        <div className="text-sm text-gray-500">{student.email}</div>
+                        <div className="text-sm font-medium text-gray-900">{`${employee.firstName} ${employee.lastName}`}</div>
+                        <div className="text-sm text-gray-500">{employee.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {student.studentId}
+                      {employee.employeeId || employee.studentId}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {student.class}
+                      {employee.department || employee.class}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {student.phoneNumber}
+                    {employee.phoneNumber}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => handlePrintId(student)}
+                        onClick={() => handlePrintId(employee)}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
                       >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +187,7 @@ const Students = () => {
                         Print ID
                       </button>
                       <button
-                        onClick={() => handleEditStudent(student)}
+                        onClick={() => handleEditEmployee(employee)}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                       >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,7 +196,7 @@ const Students = () => {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteStudent(student._id)}
+                        onClick={() => handleDeleteEmployee(employee._id)}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
                       >
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,42 +212,42 @@ const Students = () => {
           </table>
         </div>
         
-        {students.length === 0 && (
+        {employees.length === 0 && (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No students</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new student.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No employees</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by creating a new employee.</p>
             <div className="mt-6">
               <button
                 type="button"
-                onClick={handleAddStudent}
+                onClick={handleAddEmployee}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                Add Student
+                Add Employee
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Student Form Modal */}
+      {/* Employee Form Modal */}
       {showForm && (
-        <StudentForm
-          student={editingStudent}
+        <EmployeeForm
+          employee={editingEmployee}
           onSubmit={handleFormSubmit}
           onCancel={() => setShowForm(false)}
         />
       )}
 
       {/* Print ID Modal */}
-      {showPrintModal && selectedStudent && (
+      {showPrintModal && selectedEmployee && (
         <PrintIdCard
-          student={selectedStudent}
+          student={selectedEmployee}
           onClose={() => setShowPrintModal(false)}
         />
       )}
@@ -254,4 +255,4 @@ const Students = () => {
   );
 };
 
-export default Students;
+export default Employees;

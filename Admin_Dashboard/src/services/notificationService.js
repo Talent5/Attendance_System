@@ -10,7 +10,7 @@ export const notificationService = {
       if (params.limit) queryParams.append('limit', params.limit);
       if (params.type) queryParams.append('type', params.type);
       if (params.status) queryParams.append('status', params.status);
-      if (params.studentId) queryParams.append('studentId', params.studentId);
+      if (params.employeeId) queryParams.append('employeeId', params.employeeId);
 
       const url = queryParams.toString() ? `/notifications?${queryParams.toString()}` : '/notifications';
       const response = await apiClient.get(url);

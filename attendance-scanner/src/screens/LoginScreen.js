@@ -68,7 +68,7 @@ const LoginScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Attendance Scanner</Text>
-          <Text style={styles.subtitle}>Teacher Login</Text>
+          <Text style={styles.subtitle}>Manager Login</Text>
         </View>
 
         <View style={styles.form}>
@@ -134,7 +134,7 @@ const LoginScreen = ({ navigation }) => {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            For teachers and administrators only
+            For managers and administrators only
           </Text>
         </View>
       </ScrollView>

@@ -138,8 +138,7 @@ router.post('/send-notification', [
 
     const { studentIds, customMessage } = req.body;
     
-    // Get students by IDs
-    const Student = require('../models/Student');
+const Employee = require('../models/Employee');
     const students = await Student.find({ 
       _id: { $in: studentIds },
       isActive: true 
@@ -209,26 +208,26 @@ router.get('/statistics', authenticate, async (req, res) => {
     }
 
     const Attendance = require('../models/Attendance');
-    const Student = require('../models/Student');
+    const Employee = require('../models/Employee');
     
     // Get attendance statistics
     const attendanceStats = await Attendance.getAttendanceStats(start, end);
-    const totalStudents = await Student.countDocuments({ isActive: true });
+    const totalEmployees = await Employee.countDocuments({ isActive: true });
     
     // Calculate absentee rates
     const statisticsWithAbsentees = attendanceStats.map(stat => {
       const presentCount = stat.statusCounts.find(s => s.status === 'present')?.count || 0;
       const lateCount = stat.statusCounts.find(s => s.status === 'late')?.count || 0;
-      const absentCount = totalStudents - (presentCount + lateCount);
+      const absentCount = totalEmployees - (presentCount + lateCount);
       
       return {
         date: stat._id,
-        totalStudents: totalStudents,
+        totalEmployees: totalEmployees,
         present: presentCount,
         late: lateCount,
         absent: absentCount,
-        attendanceRate: ((presentCount + lateCount) / totalStudents * 100).toFixed(2),
-        absenteeRate: (absentCount / totalStudents * 100).toFixed(2)
+        attendanceRate: ((presentCount + lateCount) / totalEmployees * 100).toFixed(2),
+        absenteeRate: (absentCount / totalEmployees * 100).toFixed(2)
       };
     });
 

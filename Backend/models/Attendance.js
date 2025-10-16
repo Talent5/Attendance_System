@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema({
-  studentId: {
+  employeeId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Student',
-    required: [true, 'Student ID is required']
+    ref: 'Employee',
+    required: [true, 'Employee ID is required']
   },
   scannedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -29,7 +29,7 @@ const attendanceSchema = new mongoose.Schema({
   location: {
     type: String,
     trim: true,
-    default: 'Main Campus'
+    default: 'Main Office'
   },
   deviceInfo: {
     platform: String,
@@ -80,10 +80,10 @@ const attendanceSchema = new mongoose.Schema({
     maxlength: [200, 'Notes cannot exceed 200 characters'],
     trim: true
   },
-  classSession: {
-    subject: String,
-    teacher: String,
-    period: Number,
+  workSession: {
+    meetingTitle: String,
+    supervisor: String,
+    sessionType: String,
     startTime: Date,
     endTime: Date
   },
@@ -110,7 +110,7 @@ const attendanceSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-attendanceSchema.index({ studentId: 1, scanDate: 1 });
+attendanceSchema.index({ employeeId: 1, scanDate: 1 });
 attendanceSchema.index({ scannedBy: 1 });
 attendanceSchema.index({ scanTime: 1 });
 attendanceSchema.index({ status: 1 });
@@ -118,11 +118,11 @@ attendanceSchema.index({ isValidScan: 1 });
 attendanceSchema.index({ scanDate: 1, status: 1 });
 
 // Compound index for attendance queries
-attendanceSchema.index({ studentId: 1, scanDate: 1, status: 1 });
+attendanceSchema.index({ employeeId: 1, scanDate: 1, status: 1 });
 attendanceSchema.index({ scanDate: 1, location: 1 });
 
 // Unique compound index to prevent duplicate scans per day
-attendanceSchema.index({ studentId: 1, scanDate: 1 }, { unique: true });
+attendanceSchema.index({ employeeId: 1, scanDate: 1 }, { unique: true });
 
 // Pre-save middleware to set scan date and determine time window
 attendanceSchema.pre('save', function(next) {
@@ -135,22 +135,22 @@ attendanceSchema.pre('save', function(next) {
   const scanMinute = this.scanTime.getMinutes();
   const totalMinutes = scanHour * 60 + scanMinute;
   
-  // School starts at 8:00 AM (480 minutes from midnight)
-  const schoolStartTime = 8 * 60; // 8:00 AM
-  const lateThreshold = schoolStartTime + 15; // 8:15 AM
-  const veryLateThreshold = schoolStartTime + 30; // 8:30 AM
+  // Work starts at 9:00 AM (540 minutes from midnight)
+  const workStartTime = 9 * 60; // 9:00 AM
+  const lateThreshold = workStartTime + 15; // 9:15 AM
+  const veryLateThreshold = workStartTime + 30; // 9:30 AM
   
-  if (totalMinutes < schoolStartTime - 30) {
+  if (totalMinutes < workStartTime - 30) {
     this.timeWindow = 'early';
-  } else if (totalMinutes <= schoolStartTime + 5) {
+  } else if (totalMinutes <= workStartTime + 5) {
     this.timeWindow = 'on_time';
   } else if (totalMinutes <= lateThreshold) {
     this.timeWindow = 'late';
-    this.minutesLate = totalMinutes - schoolStartTime;
+    this.minutesLate = totalMinutes - workStartTime;
     this.status = 'late';
   } else {
     this.timeWindow = 'very_late';
-    this.minutesLate = totalMinutes - schoolStartTime;
+    this.minutesLate = totalMinutes - workStartTime;
     this.status = 'late';
   }
   
@@ -196,7 +196,7 @@ attendanceSchema.statics.findByDate = function(date, status = null) {
   if (status) query.status = status;
   
   return this.find(query)
-    .populate('studentId', 'firstName lastName studentId class section')
+    .populate('employeeId', 'firstName lastName employeeId department position')
     .populate('scannedBy', 'name email')
     .sort({ scanTime: -1 });
 };
@@ -212,20 +212,20 @@ attendanceSchema.statics.getAttendanceStats = async function(startDate, endDate,
   };
   
   // Add filters
-  if (filters.class) matchQuery['studentDetails.class'] = filters.class;
-  if (filters.section) matchQuery['studentDetails.section'] = filters.section;
+  if (filters.department) matchQuery['employeeDetails.department'] = filters.department;
+  if (filters.position) matchQuery['employeeDetails.position'] = filters.position;
   if (filters.status) matchQuery.status = filters.status;
   
   const pipeline = [
     {
       $lookup: {
-        from: 'students',
-        localField: 'studentId',
+        from: 'employees',
+        localField: 'employeeId',
         foreignField: '_id',
-        as: 'studentDetails'
+        as: 'employeeDetails'
       }
     },
-    { $unwind: '$studentDetails' },
+    { $unwind: '$employeeDetails' },
     { $match: matchQuery },
     {
       $group: {
@@ -234,7 +234,7 @@ attendanceSchema.statics.getAttendanceStats = async function(startDate, endDate,
           status: '$status'
         },
         count: { $sum: 1 },
-        students: { $addToSet: '$studentId' }
+        employees: { $addToSet: '$employeeId' }
       }
     },
     {
@@ -246,7 +246,7 @@ attendanceSchema.statics.getAttendanceStats = async function(startDate, endDate,
             count: '$count'
           }
         },
-        totalStudents: { $sum: '$count' }
+        totalEmployees: { $sum: '$count' }
       }
     },
     { $sort: { _id: -1 } }
@@ -256,7 +256,7 @@ attendanceSchema.statics.getAttendanceStats = async function(startDate, endDate,
 };
 
 // Static method to check for duplicate scan
-attendanceSchema.statics.checkDuplicateScan = async function(studentId, scanDate) {
+attendanceSchema.statics.checkDuplicateScan = async function(employeeId, scanDate) {
   const startOfDay = new Date(scanDate);
   startOfDay.setHours(0, 0, 0, 0);
   
@@ -264,7 +264,7 @@ attendanceSchema.statics.checkDuplicateScan = async function(studentId, scanDate
   endOfDay.setHours(23, 59, 59, 999);
   
   const existingAttendance = await this.findOne({
-    studentId: studentId,
+    employeeId: employeeId,
     scanTime: { $gte: startOfDay, $lte: endOfDay },
     isValidScan: true
   });
@@ -272,18 +272,18 @@ attendanceSchema.statics.checkDuplicateScan = async function(studentId, scanDate
   return existingAttendance;
 };
 
-// Static method to get student attendance history
-attendanceSchema.statics.getStudentHistory = function(studentId, limit = 50) {
-  return this.find({ studentId, isValidScan: true })
+// Static method to get employee attendance history
+attendanceSchema.statics.getEmployeeHistory = function(employeeId, limit = 50) {
+  return this.find({ employeeId, isValidScan: true })
     .populate('scannedBy', 'name')
     .sort({ scanTime: -1 })
     .limit(limit);
 };
 
-// Static method to get teacher scan history
-attendanceSchema.statics.getTeacherHistory = function(teacherId, limit = 100) {
-  return this.find({ scannedBy: teacherId, isValidScan: true })
-    .populate('studentId', 'firstName lastName studentId class section')
+// Static method to get supervisor scan history
+attendanceSchema.statics.getSupervisorHistory = function(supervisorId, limit = 100) {
+  return this.find({ scannedBy: supervisorId, isValidScan: true })
+    .populate('employeeId', 'firstName lastName employeeId department position')
     .sort({ scanTime: -1 })
     .limit(limit);
 };
@@ -303,7 +303,7 @@ attendanceSchema.methods.markNotificationSent = function(method, status, errorMe
 // Instance method to get attendance summary
 attendanceSchema.methods.getSummary = function() {
   return {
-    student: this.studentId,
+    employee: this.employeeId,
     scanTime: this.scanTime,
     status: this.status,
     timeWindow: this.timeWindow,

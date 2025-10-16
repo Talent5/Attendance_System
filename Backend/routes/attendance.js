@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Attendance, Student } = require('../models');
+const { Attendance, Employee } = require('../models');
 const QRService = require('../services/qrService');
 const AttendanceService = require('../services/attendanceService');
 const NotificationService = require('../services/notificationService');
@@ -40,22 +40,63 @@ router.post('/scan',
         });
       }
 
-      // Find student
-      const student = await Student.findOne({ 
-        studentId: qrResult.studentId,
-        isActive: true 
-      });
-
-      if (!student) {
-        return res.status(404).json({
-          success: false,
-          error: { message: 'Student not found or inactive' }
+      // Find person (employee or student for backward compatibility)
+      let person;
+      if (qrResult.isEmployee) {
+        // Try to find by employeeId first, then by MongoDB _id as fallback
+        person = await Employee.findOne({ 
+          employeeId: qrResult.employeeId,
+          isActive: true 
         });
+        
+        // If not found by employeeId, try MongoDB _id (for backward compatibility)
+        if (!person && qrResult.employeeId) {
+          try {
+            person = await Employee.findOne({
+              _id: qrResult.employeeId,
+              isActive: true
+            });
+          } catch (err) {
+            // Invalid MongoDB _id format, continue
+          }
+        }
+        
+        if (!person) {
+          return res.status(404).json({
+            success: false,
+            error: { message: 'Employee not found or inactive' }
+          });
+        }
+      } else {
+        // Backward compatibility for student QR codes
+        person = await Employee.findOne({ 
+          employeeId: qrResult.studentId, // Try to find employee with student ID format
+          isActive: true 
+        });
+        
+        // Try MongoDB _id as fallback
+        if (!person && qrResult.studentId) {
+          try {
+            person = await Employee.findOne({
+              _id: qrResult.studentId,
+              isActive: true
+            });
+          } catch (err) {
+            // Invalid MongoDB _id format, continue
+          }
+        }
+        
+        if (!person) {
+          return res.status(404).json({
+            success: false,
+            error: { message: 'Person not found or inactive' }
+          });
+        }
       }
 
       // Check for duplicate scan today
       const existingAttendance = await AttendanceService.checkDuplicateScan(
-        student._id, 
+        person._id, 
         new Date()
       );
 
@@ -71,12 +112,12 @@ router.post('/scan',
 
       // Create attendance record
       const attendanceData = {
-        studentId: student._id,
+        employeeId: person._id,
         scannedBy,
         qrCode,
         scanTime: new Date(),
         scanDate: new Date(), // Explicitly set scanDate to today
-        location: location || 'Main Campus',
+        location: location || 'Main Office',
         notes,
         deviceInfo: {
           platform: req.get('x-platform') || 'web',
@@ -92,29 +133,34 @@ router.post('/scan',
       const attendance = new Attendance(attendanceData);
       await attendance.save();
 
-      // Update student attendance statistics
-      await student.updateAttendanceStats(attendance.status);
-
-      // Send notification to guardian
+      // Update person attendance statistics (skip if employee record is incomplete)
       try {
-        await NotificationService.sendAttendanceNotification(student, attendance);
+        await person.updateAttendanceStats(attendance.status);
+      } catch (statsError) {
+        logger.warn(`Failed to update attendance stats for ${person._id}:`, statsError.message);
+        // Continue anyway - the attendance record is still created successfully
+      }
+
+      // Send notification to emergency contact
+      try {
+        await NotificationService.sendAttendanceNotification(person, attendance);
       } catch (notificationError) {
         logger.warn('Failed to send attendance notification:', notificationError);
       }
 
       // Populate the response
       await attendance.populate([
-        { path: 'studentId', select: 'firstName lastName studentId class section' },
+        { path: 'employeeId', select: 'firstName lastName employeeId department position' },
         { path: 'scannedBy', select: 'name email' }
       ]);
 
-      logger.info(`Attendance recorded: ${student.studentId} scanned by ${req.user.email}`);
+      logger.info(`Attendance recorded: ${person.employeeId} scanned by ${req.user.email}`);
 
       res.status(201).json({
         success: true,
         data: {
           attendance,
-          student: student.getQRData(),
+          employee: person.getQRData(),
           message: `Attendance recorded successfully - ${attendance.status}`
         }
       });
@@ -165,31 +211,31 @@ router.get('/',
       }
 
       if (status) query.status = status;
-      if (studentId) query.studentId = studentId;
+      if (studentId) query.employeeId = studentId;
 
-      logger.info('Attendance query filters:', { startDate, endDate, className, section, status, studentId });
+      logger.info('Attendance query filters:', { startDate, endDate, className, section, status, employeeId: studentId });
       logger.info('Built query:', JSON.stringify(query, null, 2));
 
-      // Build aggregation pipeline for class/section filtering
+      // Build aggregation pipeline for employee filtering
       const pipeline = [
         { $match: query },
         {
           $lookup: {
-            from: 'students',
-            localField: 'studentId',
+            from: 'employees',
+            localField: 'employeeId',
             foreignField: '_id',
-            as: 'student'
+            as: 'employee'
           }
         },
-        { $unwind: '$student' }
+        { $unwind: '$employee' }
       ];
 
-      // Add class/section filters
+      // Add department/position filters
       if (className || section) {
-        const studentMatch = {};
-        if (className) studentMatch['student.class'] = className;
-        if (section) studentMatch['student.section'] = section;
-        pipeline.push({ $match: studentMatch });
+        const employeeMatch = {};
+        if (className) employeeMatch['employee.department'] = className;
+        if (section) employeeMatch['employee.position'] = section;
+        pipeline.push({ $match: employeeMatch });
       }
 
       // Add pagination
@@ -220,11 +266,11 @@ router.get('/',
             timeWindow: 1,
             minutesLate: 1,
             notes: 1,
-            'student.firstName': 1,
-            'student.lastName': 1,
-            'student.studentId': 1,
-            'student.class': 1,
-            'student.section': 1,
+            'employee.firstName': 1,
+            'employee.lastName': 1,
+            'employee.employeeId': 1,
+            'employee.department': 1,
+            'employee.position': 1,
             'scannedBy.name': 1,
             'scannedBy.email': 1
           }
@@ -290,16 +336,16 @@ router.get('/today', async (req, res, next) => {
     const { class: className, section } = req.query;
 
     const todayAttendance = await Attendance.findByDate(new Date())
-      .populate('studentId', 'firstName lastName studentId class section profilePhoto')
+      .populate('employeeId', 'firstName lastName employeeId department position profilePhoto')
       .populate('scannedBy', 'name');
 
     // Filter by class/section if provided
     let filteredAttendance = todayAttendance;
     if (className || section) {
       filteredAttendance = todayAttendance.filter(record => {
-        const student = record.studentId;
-        return (!className || student.class === className) &&
-               (!section || student.section === section);
+        const employee = record.employeeId;
+        return (!className || employee.department === className) &&
+               (!section || employee.position === section);
       });
     }
 
@@ -327,26 +373,25 @@ router.get('/today', async (req, res, next) => {
 });
 
 // @route   GET /api/attendance/student/:studentId
-// @desc    Get attendance history for specific student
+// @desc    Get attendance history for specific employee (backward compatible with studentId parameter)
 // @access  Private/Teacher/Admin
 router.get('/student/:studentId',
   validateObjectId('studentId'),
   async (req, res, next) => {
     try {
       const { studentId } = req.params;
-      const { limit = 50, startDate, endDate } = req.query;
+      const { startDate, endDate, limit = 20 } = req.query;
 
-      // Verify student exists
-      const student = await Student.findById(studentId);
-      if (!student) {
+      const student = await Employee.findById(studentId);
+
+      if (!student || !student.isActive) {
         return res.status(404).json({
           success: false,
-          error: { message: 'Student not found' }
+          error: { message: 'Employee not found or inactive' }
         });
       }
 
-      // Build query
-      const query = { studentId, isValidScan: true };
+      const query = { employeeId: studentId, isValidScan: true };
       if (startDate || endDate) {
         query.scanTime = {};
         if (startDate) query.scanTime.$gte = new Date(startDate);
@@ -361,14 +406,14 @@ router.get('/student/:studentId',
       res.status(200).json({
         success: true,
         data: {
-          student: student.getQRData(),
-          attendanceStats: student.attendanceStats,
+          employee: student.getQRData ? student.getQRData() : { name: student.fullName, employeeId: student.employeeId },
+          attendanceStats: student.attendanceStats || {},
           attendance
         }
       });
 
     } catch (error) {
-      logger.error('Get student attendance error:', error);
+      logger.error('Get employee attendance error:', error);
       next(error);
     }
   }
@@ -523,25 +568,28 @@ router.delete('/:id',
 );
 
 // @route   POST /api/attendance/manual
-// @desc    Manually record attendance (without QR scan)
+// @desc    Manually record attendance (without QR scan) - backward compatible with studentId
 // @access  Private/Teacher/Admin
 router.post('/manual', async (req, res, next) => {
   try {
-    const { studentId, status, notes, location, scanTime } = req.body;
+    const { studentId, employeeId, status, notes, location, scanTime } = req.body;
 
-    if (!studentId || !status) {
+    // Accept both studentId (backward compat) and employeeId
+    const targetId = employeeId || studentId;
+
+    if (!targetId || !status) {
       return res.status(400).json({
         success: false,
-        error: { message: 'Student ID and status are required' }
+        error: { message: 'Employee ID and status are required' }
       });
     }
 
-    // Verify student exists
-    const student = await Student.findById(studentId);
-    if (!student || !student.isActive) {
+    // Verify employee exists
+    const employee = await Employee.findById(targetId);
+    if (!employee || !employee.isActive) {
       return res.status(404).json({
         success: false,
-        error: { message: 'Student not found or inactive' }
+        error: { message: 'Employee not found or inactive' }
       });
     }
 
@@ -549,7 +597,7 @@ router.post('/manual', async (req, res, next) => {
 
     // Check for duplicate
     const existingAttendance = await AttendanceService.checkDuplicateScan(
-      studentId,
+      targetId,
       attendanceDate
     );
 
@@ -562,7 +610,7 @@ router.post('/manual', async (req, res, next) => {
 
     // Create manual attendance record
     const attendance = new Attendance({
-      studentId,
+      employeeId: targetId,
       scannedBy: req.user._id,
       scanTime: attendanceDate,
       scanDate: new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate()), // Set date part only
@@ -579,15 +627,20 @@ router.post('/manual', async (req, res, next) => {
 
     await attendance.save();
 
-    // Update student stats
-    await student.updateAttendanceStats(status);
+    // Update employee stats (with error handling)
+    try {
+      await employee.updateAttendanceStats(status);
+    } catch (statsError) {
+      logger.warn(`Failed to update attendance stats: ${statsError.message}`);
+      // Continue - attendance still recorded
+    }
 
     await attendance.populate([
-      { path: 'studentId', select: 'firstName lastName studentId class section' },
+      { path: 'employeeId', select: 'firstName lastName employeeId department position' },
       { path: 'scannedBy', select: 'name email' }
     ]);
 
-    logger.info(`Manual attendance recorded: ${student.studentId} by ${req.user.email}`);
+    logger.info(`Manual attendance recorded: ${employee.employeeId || employee._id} by ${req.user.email}`);
 
     res.status(201).json({
       success: true,

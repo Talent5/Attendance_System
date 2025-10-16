@@ -1,14 +1,27 @@
-# QR Code Attendance Management System
+# QR Code Workplace Attendance Management System
 
-A comprehensive school attendance management system built with modern web technologies. The system consists of three main components: a React.js Admin Dashboard, a React Native Mobile Scanner App, and a Node.js/Express.js Backend API.
+A comprehensive workplace attendance management system built with modern web technologies. The system consists of three main components: a React.js Admin Dashboard, a React Native Mobile Scanner App, and a Node.js/Express.js Backend API.
 
-## 🏗️ System Architecture
+## 🏗️ ### QR Code Format
+```json
+{
+  "employeeId": "EMP001",
+  "name": "John Doe",
+  "department": "IT",
+  "position": "DEVELOPER",
+  "company": "QR Attendance Company",
+  "issued": "2024-01-01T00:00:00.000Z",
+  "expires": "2025-01-01T00:00:00.000Z",
+  "version": "1.0",
+  "hash": "security_hash_string"
+}
+```cture
 
 The system follows a modular client-server architecture, consisting of:
 
-•	Frontend (User Interface) - Web-based admin dashboard for staff to view, manage, and generate reports; mobile app for scanning QR codes.
+•	Frontend (User Interface) - Web-based admin dashboard for HR and managers to view, manage, and generate reports; mobile app for scanning QR codes.
 •	Backend (Business Logic & Database Interaction) - Handles data processing, communication, and attendance logic.
-•	Database - Stores student records, attendance logs, and contact information.
+•	Database - Stores employee records, attendance logs, and contact information.
 
 ```
 ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
@@ -27,16 +40,16 @@ The system follows a modular client-server architecture, consisting of:
 ## 📱 Project Components
 
 ### 1. Admin Dashboard (`/Admin_Dashboard`)
-A responsive web application for school administrators and teachers to manage students and attendance records.
+A responsive web application for HR administrators and managers to manage employees and attendance records.
 
 **Key Features:**
-- Student management (CRUD operations)
+- Employee management (CRUD operations)
 - ID card generation with QR codes
 - Attendance tracking and reporting
 - User management with role-based access
 - Real-time attendance dashboard
 - CSV export functionality
-- Absentee notifications management
+- Absence notifications management
 
 **Technology Stack:**
 - **Frontend:** React 19.1.1 + Vite
@@ -49,11 +62,11 @@ A responsive web application for school administrators and teachers to manage st
 - **Print Support:** React-to-Print + HTML2Canvas
 
 ### 2. Mobile Scanner App (`/attendance-scanner`)
-A cross-platform mobile application for teachers to scan student QR codes and record attendance.
+A cross-platform mobile application for managers and supervisors to scan employee QR codes and record attendance.
 
 **Key Features:**
 - QR code scanning with camera
-- Teacher authentication
+- Manager/Supervisor authentication
 - Real-time attendance dashboard
 - Offline support with sync capability
 - Network status monitoring
@@ -73,7 +86,7 @@ A RESTful API server handling all business logic, authentication, and data manag
 
 **Key Features:**
 - JWT-based authentication
-- Student and user management
+- Employee and user management
 - QR code generation and validation
 - Attendance tracking with duplicate prevention
 - Automated email notifications
@@ -91,27 +104,27 @@ A RESTful API server handling all business logic, authentication, and data manag
 - **Validation:** Joi + Express Validator
 - **Logging:** Winston 3.10.0
 - **File Upload:** Multer
-- **Scheduling:** Node-cron
+- **Shift Scheduling:** Node-cron
 
 ## 🗄️ Database Schema
 
-### Student Model
+### Employee Model
 ```javascript
 {
-  studentId: String (unique, required),
+  employeeId: String (unique, required),
   firstName: String (required),
   lastName: String (required),
   email: String,
-  class: String (required),
-  section: String,
+  department: String (required),
+  position: String,
   dateOfBirth: Date,
-  guardianName: String (required),
-  guardianPhone: String (required),
-  guardianEmail: String,
+  emergencyContactName: String (required),
+  emergencyContactPhone: String (required),
+  emergencyContactEmail: String,
   profilePhoto: String,
   qrCode: String (unique),
   qrCodeData: String,
-  enrollmentDate: Date,
+  hireDate: Date,
   isActive: Boolean,
   attendanceStats: {
     totalDays: Number,
@@ -126,7 +139,7 @@ A RESTful API server handling all business logic, authentication, and data manag
 ### Attendance Model
 ```javascript
 {
-  studentId: ObjectId (ref: Student),
+  employeeId: ObjectId (ref: Employee),
   scannedBy: ObjectId (ref: User),
   scanTime: Date,
   scanDate: Date,
@@ -156,7 +169,7 @@ A RESTful API server handling all business logic, authentication, and data manag
   name: String (required),
   email: String (unique, required),
   password: String (hashed),
-  role: Enum ['admin', 'teacher', 'staff'],
+  role: Enum ['admin', 'manager', 'supervisor', 'hr'],
   isActive: Boolean,
   lastLogin: Date,
   loginAttempts: Number,
@@ -167,11 +180,11 @@ A RESTful API server handling all business logic, authentication, and data manag
 ### Notification Model
 ```javascript
 {
-  studentId: ObjectId (ref: Student),
+  employeeId: ObjectId (ref: Employee),
   attendanceId: ObjectId (ref: Attendance),
-  guardianPhone: String,
-  guardianEmail: String,
-  guardianName: String,
+  emergencyContactPhone: String,
+  emergencyContactEmail: String,
+  emergencyContactName: String,
   message: String,
   subject: String,
   type: Enum ['attendance', 'absence', 'general'],
@@ -224,6 +237,9 @@ EMAIL_PASS=your_app_password
 
 # Security
 BCRYPT_ROUNDS=12
+
+# Company Configuration
+COMPANY_NAME="Your Company Name"
 ```
 
 Start the server:
@@ -242,8 +258,8 @@ npm run dev
 Access at: `http://localhost:5173`
 
 **Demo Credentials:**
-- Admin: `admin@school.com` / `password`
-- Teacher: `teacher@school.com` / `password`
+- Admin: `admin@company.com` / `password`
+- Manager: `manager@company.com` / `password`
 
 ### 3. Mobile Scanner Setup
 
@@ -265,19 +281,19 @@ npm start
 ## 📋 Features Overview
 
 ### Admin Dashboard Features
-- ✅ **Student Management:** Add, edit, delete, and search students
+- ✅ **Employee Management:** Add, edit, delete, and search employees
 - ✅ **ID Card Generation:** Generate printable ID cards with QR codes
 - ✅ **Attendance Tracking:** View real-time attendance with filters
 - ✅ **Reporting:** Generate attendance reports with charts
-- ✅ **User Management:** Manage admin and teacher accounts
+- ✅ **User Management:** Manage admin and manager accounts
 - ✅ **QR Scanner:** Manual QR code scanning for attendance
-- ✅ **Absentee Management:** Automated absence notifications
+- ✅ **Absence Management:** Automated absence notifications
 - ✅ **Export Data:** CSV export for attendance records
 - ✅ **Dashboard Analytics:** Visual attendance statistics
 
 ### Mobile Scanner Features
 - ✅ **QR Code Scanning:** Fast camera-based QR scanning
-- ✅ **Teacher Login:** Secure authentication for teachers
+- ✅ **Manager Login:** Secure authentication for managers/supervisors
 - ✅ **Real-time Dashboard:** View today's attendance instantly
 - ✅ **Offline Support:** Store scans offline and sync later
 - ✅ **Network Monitoring:** Automatic network status detection
@@ -287,7 +303,7 @@ npm start
 ### Backend API Features
 - ✅ **RESTful API:** Complete CRUD operations
 - ✅ **JWT Authentication:** Secure token-based auth
-- ✅ **Role-based Access:** Admin, teacher, staff permissions
+- ✅ **Role-based Access:** Admin, manager, staff permissions
 - ✅ **QR Code System:** Generation and validation
 - ✅ **Attendance Logic:** Duplicate prevention, time windows
 - ✅ **Email Notifications:** Automated parent notifications
@@ -301,11 +317,11 @@ npm start
 ### QR Code Format
 ```json
 {
-  "studentId": "STD001",
+  "employeeId": "EMP001",
   "name": "John Doe",
-  "class": "10",
+  "department": "Engineering",
   "section": "A",
-  "school": "QR Attendance School",
+  "company": "QR Attendance Company",
   "issued": "2024-01-01T00:00:00.000Z",
   "expires": "2025-01-01T00:00:00.000Z",
   "version": "1.0",
@@ -323,9 +339,9 @@ npm start
 ## 📊 Attendance Logic
 
 ### Time Windows
-- **On Time:** Before 8:30 AM
-- **Late:** 8:30 AM - 9:00 AM (0-30 minutes late)
-- **Very Late:** After 9:00 AM (30+ minutes late)
+- **On Time:** Before 9:05 AM
+- **Late:** 9:05 AM - 9:15 AM (5-15 minutes late)
+- **Very Late:** After 9:15 AM (15+ minutes late)
 
 ### Status Calculation
 - **Present:** Successfully scanned on time
@@ -333,16 +349,16 @@ npm start
 - **Absent:** No scan recorded for the day
 
 ### Duplicate Prevention
-- One attendance record per student per day
+- One attendance record per employee per day
 - Backend validation prevents multiple scans
 - Mobile app shows appropriate error messages
 
 ## 📧 Notification System
 
 ### Email Notifications
-- **Attendance Confirmation:** Sent when student arrives
-- **Late Arrival:** Sent when student is late
-- **Absence Alert:** Sent when student is absent
+- **Attendance Confirmation:** Sent when employee arrives
+- **Late Arrival:** Sent when employee is late
+- **Absence Alert:** Sent when employee is absent
 - **Daily Summary:** Optional daily attendance report
 
 ### Notification Channels
@@ -351,7 +367,7 @@ npm start
 - **Push:** Mobile app notifications
 
 ### Automation
-- Scheduled checks for absent students
+- Scheduled checks for absent employees
 - Retry logic for failed notifications
 - Template-based message generation
 
@@ -360,7 +376,7 @@ npm start
 ### Authentication & Authorization
 - JWT tokens with refresh mechanism
 - Password hashing with bcryptjs
-- Role-based access control (Admin, Teacher, Staff)
+- Role-based access control (Admin, Manager, Staff)
 - Session management with logout
 
 ### API Security
@@ -521,13 +537,13 @@ POST /api/auth/logout
 POST /api/auth/refresh
 ```
 
-### Student Endpoints
+### Employee Endpoints
 ```
-GET    /api/students
-POST   /api/students
-GET    /api/students/:id
-PUT    /api/students/:id
-DELETE /api/students/:id
+GET    /api/employees
+POST   /api/employees
+GET    /api/employees/:id
+PUT    /api/employees/:id
+DELETE /api/employees/:id
 ```
 
 ### Attendance Endpoints
@@ -581,4 +597,4 @@ For support and questions:
 
 ---
 
-**Built with ❤️ for modern education management**
+**Built with ❤️ for modern workplace management**

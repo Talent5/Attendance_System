@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const studentRoutes = require('./routes/students');
+const employeeRoutes = require('./routes/employees');
 const attendanceRoutes = require('./routes/attendance');
 const notificationRoutes = require('./routes/notifications');
 const absenteeNotificationRoutes = require('./routes/absenteeNotifications');
@@ -69,7 +69,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/students', studentRoutes);
+app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/absentee', absenteeNotificationRoutes);

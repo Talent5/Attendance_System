@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const Student = require('../models/Student');
+const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
 const notificationService = require('./notificationService');
 const logger = require('../utils/logger');
@@ -29,7 +29,7 @@ class AbsenteeNotificationService {
   }
 
   /**
-   * Check for absent students and send notifications to guardians
+   * Check for absent employees and send notifications to emergency contacts
    */
   async checkAndNotifyAbsentees() {
     try {
@@ -42,31 +42,31 @@ class AbsenteeNotificationService {
       const endOfDay = new Date(today);
       endOfDay.setHours(23, 59, 59, 999);
 
-      // Get all active students
-      const allStudents = await Student.find({ isActive: true });
-      logger.info(`Found ${allStudents.length} active students`);
+      // Get all active employees
+      const allEmployees = await Employee.find({ isActive: true });
+      logger.info(`Found ${allEmployees.length} active employees`);
 
-      // Get students who have already marked attendance today
-      const presentStudents = await Attendance.find({
+      // Get employees who have already marked attendance today
+      const presentEmployees = await Attendance.find({
         scanTime: { $gte: startOfDay, $lte: endOfDay },
         isValidScan: true
-      }).distinct('studentId');
+      }).distinct('employeeId');
 
-      // Find absent students (those who haven't marked attendance)
-      const absentStudentIds = allStudents
-        .filter(student => !presentStudents.some(presentId => presentId.equals(student._id)))
-        .map(student => student._id);
+      // Find absent employees (those who haven't marked attendance)
+      const absentEmployeeIds = allEmployees
+        .filter(employee => !presentEmployees.some(presentId => presentId.equals(employee._id)))
+        .map(employee => employee._id);
 
-      if (absentStudentIds.length === 0) {
-        logger.info('No absent students found - all students have marked attendance');
+      if (absentEmployeeIds.length === 0) {
+        logger.info('No absent employees found - all employees have marked attendance');
         return;
       }
 
-      const absentStudents = await Student.find({ _id: { $in: absentStudentIds } });
-      logger.info(`Found ${absentStudents.length} absent students`);
+      const absentEmployees = await Employee.find({ _id: { $in: absentEmployeeIds } });
+      logger.info(`Found ${absentEmployees.length} absent employees`);
 
-      // Send notifications to guardians
-      const notificationResults = await this.sendAbsenteeNotifications(absentStudents);
+      // Send notifications to emergency contacts
+      const notificationResults = await this.sendAbsenteeNotifications(absentEmployees);
       
       // Log the results
       this.logNotificationResults(notificationResults);
@@ -77,21 +77,21 @@ class AbsenteeNotificationService {
   }
 
   /**
-   * Send absentee notifications to guardians
-   * @param {Array} absentStudents - Array of absent student objects
+   * Send absentee notifications to emergency contacts
+   * @param {Array} absentEmployees - Array of absent employee objects
    * @returns {Promise<Array>} - Array of notification results
    */
-  async sendAbsenteeNotifications(absentStudents) {
+  async sendAbsenteeNotifications(absentEmployees) {
     const results = [];
     const currentDate = new Date().toLocaleDateString();
     const currentTime = new Date().toLocaleTimeString();
 
-    for (const student of absentStudents) {
+    for (const employee of absentEmployees) {
       const result = {
-        studentId: student._id,
-        studentName: student.fullName,
-        guardianEmail: student.guardianEmail,
-        guardianPhone: student.guardianPhone,
+        employeeId: employee._id,
+        employeeName: employee.fullName,
+        emergencyContactEmail: employee.emergencyContactEmail,
+        emergencyContactPhone: employee.emergencyContactPhone,
         emailSent: false,
         smsSent: false,
         errors: []
@@ -99,82 +99,82 @@ class AbsenteeNotificationService {
 
       try {
         // Prepare notification content
-        const emailSubject = `⚠️ Attendance Alert: ${student.firstName} ${student.lastName} - Absent Today`;
+        const emailSubject = `⚠️ Attendance Alert: ${employee.firstName} ${employee.lastName} - Absent Today`;
         
         const emailContent = `
-Dear ${student.guardianName},
+Dear ${employee.emergencyContactName},
 
-This is an automated notification to inform you that your child has not yet arrived at school today.
+This is an automated notification to inform you that ${employee.firstName} ${employee.lastName} has not yet arrived at work today.
 
-Student Details:
-📋 Name: ${student.firstName} ${student.lastName}
-🆔 Student ID: ${student.studentId}
-🎓 Class: ${student.class}${student.section ? ` - Section ${student.section}` : ''}
+Employee Details:
+📋 Name: ${employee.firstName} ${employee.lastName}
+🆔 Employee ID: ${employee.employeeId}
+� Department: ${employee.department}${employee.position ? ` - Position: ${employee.position}` : ''}
 📅 Date: ${currentDate}
 ⏰ Notification Time: ${currentTime}
 
-⚠️ IMPORTANT: Your child has not been marked present as of 9:30 AM today.
+⚠️ IMPORTANT: ${employee.firstName} has not been marked present as of 9:30 AM today.
 
-If your child is sick or will be absent for any reason, please contact the school office immediately.
+If the employee is sick or will be absent for any reason, please contact HR immediately.
 
-If your child is on their way to school, please disregard this message.
+If the employee is on their way to work, please disregard this message.
 
-For any questions or concerns, please contact the school administration.
+For any questions or concerns, please contact the HR department.
 
-Emergency Contact: ${student.emergencyContact?.name ? `${student.emergencyContact.name} - ${student.emergencyContact.phone}` : 'Contact school office'}
+Secondary Emergency Contact: ${employee.secondaryEmergencyContact?.name ? `${employee.secondaryEmergencyContact.name} - ${employee.secondaryEmergencyContact.phone}` : 'Contact HR office'}
 
 Thank you for your attention to this matter.
 
 Best regards,
-School Administration
+HR Department
 QR Attendance System
 
 ---
 This is an automated message. Please do not reply to this email.
         `;
 
-        const smsMessage = `ALERT: ${student.firstName} ${student.lastName} (ID: ${student.studentId}) has not arrived at school as of 9:30 AM today (${currentDate}). Please contact school if child is sick or will be absent. - School Administration`;
+        const smsMessage = `ALERT: ${employee.firstName} ${employee.lastName} (ID: ${employee.employeeId}) has not arrived at work as of 9:30 AM today (${currentDate}). Please contact HR if employee is sick or will be absent. - HR Department`;
 
         // Send email notification
-        if (student.guardianEmail) {
+        if (employee.emergencyContactEmail) {
           try {
             await notificationService.sendEmail(
-              student.guardianEmail,
+              employee.emergencyContactEmail,
               emailSubject,
               emailContent,
               null,
               'absentee'
             );
             result.emailSent = true;
-            logger.info(`Absentee email sent to guardian of ${student.fullName}`);
+            logger.info(`Absentee email sent to emergency contact of ${employee.fullName}`);
           } catch (error) {
             result.errors.push(`Email failed: ${error.message}`);
-            logger.error(`Failed to send absentee email for ${student.fullName}:`, error);
+            logger.error(`Failed to send absentee email for ${employee.fullName}:`, error);
           }
         } else {
-          result.errors.push('No guardian email provided');
+          result.errors.push('No emergency contact email provided');
         }
 
         // Send SMS notification
-        if (student.guardianPhone) {
+        if (employee.emergencyContactPhone) {
           try {
-            await notificationService.sendSMS(student.guardianPhone, smsMessage);
+            await notificationService.sendSMS(employee.emergencyContactPhone, smsMessage);
             result.smsSent = true;
-            logger.info(`Absentee SMS sent to guardian of ${student.fullName}`);
+            logger.info(`Absentee SMS sent to emergency contact of ${employee.fullName}`);
           } catch (error) {
             result.errors.push(`SMS failed: ${error.message}`);
-            logger.error(`Failed to send absentee SMS for ${student.fullName}:`, error);
+            logger.error(`Failed to send absentee SMS for ${employee.fullName}:`, error);
           }
         } else {
-          result.errors.push('No guardian phone provided');
+          result.errors.push('No emergency contact phone provided');
         }
 
         // Create a record of the absence notification
-        await this.createAbsenceRecord(student);
+        await this.createAbsenceRecord(employee);
 
       } catch (error) {
         result.errors.push(`General error: ${error.message}`);
-        logger.error(`Error processing absentee notification for ${student.fullName}:`, error);
+        logger.error(`Error processing absentee notification for ${employee.fullName}:`, error);
       }
 
       results.push(result);
@@ -185,23 +185,23 @@ This is an automated message. Please do not reply to this email.
 
   /**
    * Create an absence record for tracking
-   * @param {Object} student - Student object
+   * @param {Object} employee - Employee object
    */
-  async createAbsenceRecord(student) {
+  async createAbsenceRecord(employee) {
     try {
       const today = new Date();
       const scanDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
       // Check if an absence record already exists for today
       const existingRecord = await Attendance.findOne({
-        studentId: student._id,
+        employeeId: employee._id,
         scanDate: scanDate
       });
 
       if (!existingRecord) {
         // Create an absence record
         const absenceRecord = new Attendance({
-          studentId: student._id,
+          employeeId: employee._id,
           scannedBy: null, // System generated
           scanTime: new Date(),
           scanDate: scanDate,
@@ -210,7 +210,7 @@ This is an automated message. Please do not reply to this email.
           qrCode: 'ABSENCE_NOTIFICATION',
           isValidScan: false,
           invalidReason: 'absent',
-          notes: 'Automatically marked absent - Guardian notified at 9:30 AM',
+          notes: 'Automatically marked absent - Emergency contact notified at 9:30 AM',
           notificationSent: true,
           notificationDetails: {
             sentAt: new Date(),
@@ -221,13 +221,13 @@ This is an automated message. Please do not reply to this email.
 
         await absenceRecord.save();
         
-        // Update student attendance stats
-        await student.updateAttendanceStats('absent');
+        // Update employee attendance stats
+        await employee.updateAttendanceStats('absent');
         
-        logger.info(`Absence record created for ${student.fullName}`);
+        logger.info(`Absence record created for ${employee.fullName}`);
       }
     } catch (error) {
-      logger.error(`Failed to create absence record for ${student.fullName}:`, error);
+      logger.error(`Failed to create absence record for ${employee.fullName}:`, error);
     }
   }
 
@@ -248,7 +248,7 @@ This is an automated message. Please do not reply to this email.
     // Log individual errors
     results.forEach(result => {
       if (result.errors.length > 0) {
-        logger.warn(`Notification issues for ${result.studentName}:`, result.errors);
+        logger.warn(`Notification issues for ${result.employeeName}:`, result.errors);
       }
     });
   }
@@ -286,7 +286,7 @@ This is an automated message. Please do not reply to this email.
   }
 
   /**
-   * Check if a student should be considered absent at current time
+   * Check if an employee should be considered absent at current time
    * @param {Date} currentTime - Current time to check against
    * @returns {boolean} - Whether notifications should be sent
    */
@@ -302,29 +302,29 @@ This is an automated message. Please do not reply to this email.
   }
 
   /**
-   * Get absent students for a specific date
+   * Get absent employees for a specific date
    * @param {Date} date - Date to check (defaults to today)
-   * @returns {Promise<Array>} - Array of absent students
+   * @returns {Promise<Array>} - Array of absent employees
    */
-  async getAbsentStudents(date = new Date()) {
+  async getAbsentEmployees(date = new Date()) {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Get all active students
-    const allStudents = await Student.find({ isActive: true });
+    // Get all active employees
+    const allEmployees = await Employee.find({ isActive: true });
 
-    // Get students who have already marked attendance for the date
-    const presentStudents = await Attendance.find({
+    // Get employees who have already marked attendance for the date
+    const presentEmployees = await Attendance.find({
       scanTime: { $gte: startOfDay, $lte: endOfDay },
       isValidScan: true
-    }).distinct('studentId');
+    }).distinct('employeeId');
 
-    // Return absent students
-    return allStudents.filter(student => 
-      !presentStudents.some(presentId => presentId.equals(student._id))
+    // Return absent employees
+    return allEmployees.filter(employee => 
+      !presentEmployees.some(presentId => presentId.equals(employee._id))
     );
   }
 }

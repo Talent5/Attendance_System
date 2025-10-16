@@ -5,6 +5,11 @@ import config from '../config/config';
 // Base URL for the backend API
 const BASE_URL = config.API_BASE_URL;
 
+// Log configuration on module load
+console.log('🔧 AttendanceService initialized');
+console.log(`📱 Environment: ${config.ENV_MODE}`);
+console.log(`🌐 API Base URL: ${BASE_URL}`);
+
 class AttendanceService {
   constructor() {
     this.api = axios.create({
@@ -64,7 +69,7 @@ class AttendanceService {
       // Try to parse QR code to validate format
       try {
         const qrData = JSON.parse(formattedData.qrCode);
-        console.log('QR code validation - Student ID:', qrData.studentId || qrData.id);
+        console.log('QR code validation - Employee ID:', qrData.employeeId || qrData.studentId || qrData.id);
         console.log('QR code validation - Type:', qrData.type || 'standard');
       } catch (parseError) {
         console.warn('QR code parsing validation failed:', parseError.message);
@@ -93,9 +98,9 @@ class AttendanceService {
       if (error.response?.status === 400 && error.response?.data?.error?.details?.includes('QR code integrity')) {
         throw new Error('QR code is invalid or corrupted. Please try scanning again.');
       } else if (error.response?.status === 404) {
-        throw new Error('Student not found. Please verify the QR code is valid.');
+        throw new Error('Employee not found. Please verify the QR code is valid.');
       } else if (error.response?.status === 400 && error.response?.data?.error?.message?.includes('already recorded')) {
-        throw new Error('Attendance has already been recorded for this student today.');
+        throw new Error('Attendance has already been recorded for this employee today.');
       }
       
       throw error;
@@ -115,7 +120,7 @@ class AttendanceService {
         try {
           console.log(`Syncing attendance record:`, {
             id: attendance.id,
-            studentId: attendance.studentId,
+            employeeId: attendance.employeeId || attendance.studentId,
             qrData: attendance.qrData?.substring(0, 50) + '...' // Log partial QR data for debugging
           });
           
@@ -176,7 +181,7 @@ class AttendanceService {
       const {
         startDate,
         endDate,
-        class: className,
+        department: departmentName,
         section,
         status,
         page = 1,
@@ -190,7 +195,7 @@ class AttendanceService {
 
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
-      if (className) params.class = className;
+      if (departmentName) params.department = departmentName;
       if (section) params.section = section;
       if (status) params.status = status;
 
@@ -213,14 +218,26 @@ class AttendanceService {
     }
   }
 
-  // Get student information by student ID
-  async getStudentInfo(studentId) {
+  // Get employee information by employee ID (with backward compatibility for student IDs)
+  async getEmployeeInfo(employeeId) {
     try {
-      const response = await this.api.get(`/api/students/${studentId}`);
+      // Try employee endpoint first
+      const response = await this.api.get(`/api/employees/${employeeId}`);
       return response.data;
     } catch (error) {
-      throw error;
+      // Fallback to employees endpoint for backward compatibility
+      try {
+        const response = await this.api.get(`/api/employees/${employeeId}`);
+        return response.data;
+      } catch (fallbackError) {
+        throw error;
+      }
     }
+  }
+
+  // Legacy method for backward compatibility
+  async getStudentInfo(studentId) {
+    return this.getEmployeeInfo(studentId);
   }
 
   // Check network connectivity

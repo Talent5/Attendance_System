@@ -66,19 +66,19 @@ class QRService {
   }
 
   /**
-   * Generate QR code for student ID card
-   * @param {object} studentData - Student data object
+   * Generate QR code for employee ID card
+   * @param {object} employeeData - Employee data object
    * @returns {Promise<object>} QR code data and image
    */
-  static async generateStudentQRCode(studentData) {
+  static async generateEmployeeQRCode(employeeData) {
     try {
       // Create QR data with security features
       const qrData = {
-        id: studentData.studentId,
-        name: studentData.fullName,
-        class: studentData.class,
-        section: studentData.section,
-        school: process.env.SCHOOL_NAME || 'QR Attendance School',
+        id: employeeData.employeeId,
+        name: employeeData.fullName,
+        department: employeeData.department,
+        position: employeeData.position,
+        company: process.env.COMPANY_NAME || 'QR Attendance Company',
         issued: new Date().toISOString(),
         expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
         version: '1.0'
@@ -98,15 +98,15 @@ class QRService {
       });
 
       return {
-        qrCode: `QR-${studentData.studentId}-${Date.now()}`,
+        qrCode: `QR-${employeeData.employeeId}-${Date.now()}`,
         qrCodeData: qrString,
         qrCodeImage,
         securityHash
       };
 
     } catch (error) {
-      logger.error('Student QR code generation failed:', error);
-      throw new Error('Failed to generate student QR code');
+      logger.error('Employee QR code generation failed:', error);
+      throw new Error('Failed to generate employee QR code');
     }
   }
 
@@ -139,19 +139,58 @@ class QRService {
 
       // Check if this is a legacy QR code format (without hash)
       // This is for backward compatibility with older mobile apps
-      const isLegacyFormat = qrData.type === 'attendance' && qrData.studentId && qrData.name;
+      const isLegacyStudentFormat = qrData.type === 'attendance' && qrData.studentId && qrData.name;
+      const isLegacyEmployeeFormat = qrData.type === 'attendance' && qrData.employeeId && qrData.name;
       
-      if (isLegacyFormat) {
-        // For legacy format, just verify required fields exist
+      if (isLegacyStudentFormat) {
+        // For legacy student format, just verify required fields exist
         const requiredFields = ['studentId', 'name', 'class', 'section'];
         for (const field of requiredFields) {
           if (!qrData[field]) {
-            logger.warn(`Legacy QR code missing required field: ${field}`, qrData);
+            logger.warn(`Legacy student QR code missing required field: ${field}`, qrData);
             return false;
           }
         }
-        logger.info('Legacy QR code format validated successfully', { 
+        logger.info('Legacy student QR code format validated successfully', { 
           studentId: qrData.studentId, 
+          type: qrData.type 
+        });
+        return true;
+      }
+      
+      if (isLegacyEmployeeFormat) {
+        // For legacy employee format, verify minimal required fields
+        // Note: Some QR codes may not include department/position yet - these are optional during transition
+        const requiredFields = ['employeeId', 'name'];
+        const missingRequired = [];
+        
+        for (const field of requiredFields) {
+          if (!qrData[field]) {
+            missingRequired.push(field);
+          }
+        }
+        
+        if (missingRequired.length > 0) {
+          logger.warn(`Legacy employee QR code missing required field(s): ${missingRequired.join(', ')}`, qrData);
+          return false;
+        }
+        
+        // Warn but don't fail if optional fields are missing
+        if (!qrData.department) {
+          logger.warn('Legacy employee QR code missing optional field: department', { 
+            employeeId: qrData.employeeId,
+            name: qrData.name
+          });
+        }
+        if (!qrData.position) {
+          logger.warn('Legacy employee QR code missing optional field: position', { 
+            employeeId: qrData.employeeId,
+            name: qrData.name
+          });
+        }
+        
+        logger.info('Legacy employee QR code format validated successfully', { 
+          employeeId: qrData.employeeId, 
           type: qrData.type 
         });
         return true;
@@ -161,11 +200,20 @@ class QRService {
       const { hash, ...dataWithoutHash } = qrData;
       
       if (!hash) {
-        // If no hash and not legacy format, check if it's a simple student QR code
+        // If no hash and not legacy format, check if it's a simple QR code
         const hasBasicStudentFields = qrData.id && qrData.name && qrData.class && qrData.section;
+        const hasBasicEmployeeFields = qrData.id && qrData.name && qrData.department && qrData.position;
+        
         if (hasBasicStudentFields) {
           logger.info('Basic student QR code format detected', { 
             studentId: qrData.id || qrData.studentId 
+          });
+          return true;
+        }
+        
+        if (hasBasicEmployeeFields) {
+          logger.info('Basic employee QR code format detected', { 
+            employeeId: qrData.id || qrData.employeeId 
           });
           return true;
         }
@@ -215,6 +263,7 @@ class QRService {
       logger.debug('Parsing QR code:', { 
         type: qrData.type, 
         studentId: qrData.studentId || qrData.id,
+        employeeId: qrData.employeeId || qrData.id,
         hasHash: !!qrData.hash 
       });
 
@@ -229,47 +278,81 @@ class QRService {
       }
 
       // Validate required fields based on QR code type
-      let studentId, studentName, classValue, section;
+      let personId, personName, departmentOrClass, positionOrSection;
+      let isEmployee = false;
       
-      // Handle legacy format (from mobile app)
+      // Handle legacy student format (from mobile app)
       if (qrData.type === 'attendance' && qrData.studentId) {
-        studentId = qrData.studentId;
-        studentName = qrData.name;
-        classValue = qrData.class;
-        section = qrData.section;
+        personId = qrData.studentId;
+        personName = qrData.name;
+        departmentOrClass = qrData.class;
+        positionOrSection = qrData.section;
         
-        logger.info('Legacy attendance QR code processed', { studentId, studentName });
-      } else if (qrData.id) {
-        // Handle standard format (from admin dashboard)
-        studentId = qrData.id;
-        studentName = qrData.name;
-        classValue = qrData.class;
-        section = qrData.section;
+        logger.info('Legacy student attendance QR code processed', { studentId: personId, studentName: personName });
+      } 
+      // Handle legacy employee format (from mobile app)
+      else if (qrData.type === 'attendance' && qrData.employeeId) {
+        personId = qrData.employeeId;
+        personName = qrData.name;
+        departmentOrClass = qrData.department || 'Unknown Department'; // Use default if missing
+        positionOrSection = qrData.position || 'Unknown Position'; // Use default if missing
+        isEmployee = true;
         
-        logger.info('Standard QR code processed', { studentId, studentName });
+        logger.info('Legacy employee attendance QR code processed', { employeeId: personId, employeeName: personName });
+      }
+      // Handle standard format (from admin dashboard)
+      else if (qrData.id) {
+        personId = qrData.id;
+        personName = qrData.name;
+        
+        // Check if it's employee or student based on fields present
+        if (qrData.department && qrData.position) {
+          departmentOrClass = qrData.department;
+          positionOrSection = qrData.position;
+          isEmployee = true;
+          logger.info('Standard employee QR code processed', { employeeId: personId, employeeName: personName });
+        } else if (qrData.class && qrData.section) {
+          departmentOrClass = qrData.class;
+          positionOrSection = qrData.section;
+          logger.info('Standard student QR code processed', { studentId: personId, studentName: personName });
+        } else {
+          throw new Error('QR code missing required department/class and position/section fields');
+        }
       } else {
-        throw new Error('QR code missing required student identification fields');
+        throw new Error('QR code missing required identification fields');
       }
 
       // Final validation of extracted data
-      if (!studentId || !studentName || !classValue || !section) {
+      if (!personId || !personName) {
         const missingFields = [];
-        if (!studentId) missingFields.push('studentId');
-        if (!studentName) missingFields.push('name');
-        if (!classValue) missingFields.push('class');
-        if (!section) missingFields.push('section');
+        if (!personId) missingFields.push(isEmployee ? 'employeeId' : 'studentId');
+        if (!personName) missingFields.push('name');
         
         throw new Error(`QR code missing required fields: ${missingFields.join(', ')}`);
       }
+      
+      // Note: departmentOrClass and positionOrSection will have defaults if not provided
+      // so we don't fail if they're missing
 
-      return {
+      const result = {
         isValid: true,
         data: qrData,
-        studentId: studentId,
-        studentName: studentName,
-        class: classValue,
-        section: section
+        isEmployee: isEmployee
       };
+      
+      if (isEmployee) {
+        result.employeeId = personId;
+        result.employeeName = personName;
+        result.department = departmentOrClass;
+        result.position = positionOrSection;
+      } else {
+        result.studentId = personId;
+        result.studentName = personName;
+        result.class = departmentOrClass;
+        result.section = positionOrSection;
+      }
+      
+      return result;
 
     } catch (error) {
       logger.error('QR code parsing failed:', error.message, { qrString: qrString?.substring(0, 100) });

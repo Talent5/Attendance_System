@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Attendance, Student } = require('./models');
+const { Attendance, Employee } = require('./models');
 
 // Test attendance creation
 async function testAttendanceCreation() {
@@ -8,11 +8,11 @@ async function testAttendanceCreation() {
     
     // Create a test attendance record
     const testAttendance = new Attendance({
-      studentId: new mongoose.Types.ObjectId(), // Fake student ID for testing
+      employeeId: new mongoose.Types.ObjectId(), // Fake employee ID for testing
       scannedBy: new mongoose.Types.ObjectId(), // Fake user ID for testing
       scanTime: new Date(),
       location: 'Mobile App',
-      qrCode: '{"studentId":"STU005","type":"attendance","name":"Test Student","class":"GRADE 11","section":"A"}',
+      qrCode: '{"employeeId":"EMP005","type":"attendance","name":"Test Employee","department":"IT","position":"STAFF"}',
       notes: 'Test scan'
     });
 

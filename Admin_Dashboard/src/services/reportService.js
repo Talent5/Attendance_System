@@ -4,23 +4,23 @@ const reportService = {
   // Get reports stats for dashboard
   getReportsStats: async () => {
     try {
-      const [studentsResponse, attendanceStatsResponse, attendanceResponse, usersResponse] = await Promise.all([
-        apiClient.get('/students/stats'),
+      const [employeesResponse, attendanceStatsResponse, attendanceResponse, usersResponse] = await Promise.all([
+        apiClient.get('/employees/stats'),
         apiClient.get('/attendance/stats'),
         apiClient.get('/attendance/today'),
         apiClient.get('/users')
       ]);
 
-      const studentStats = studentsResponse.data.data;
+      const employeeStats = employeesResponse.data.data;
       const attendanceStats = attendanceStatsResponse.data.data;
       const todayAttendance = attendanceResponse.data.data;
       const users = usersResponse.data.data;
 
       return {
-        totalStudents: studentStats.totalActive,
+        totalEmployees: employeeStats.totalActive,
         averageAttendance: attendanceStats.overallAttendanceRate || 0,
-        classesToday: todayAttendance.summary?.total || 0,
-        activeTeachers: users.users?.filter(user => user.role === 'teacher' && user.isActive).length || 0,
+        shiftsToday: todayAttendance.summary?.total || 0,
+        activeManagers: users.users?.filter(user => user.role === 'manager' && user.isActive).length || 0,
         attendanceData: attendanceStats,
         todayAttendance: todayAttendance
       };
@@ -51,24 +51,24 @@ const reportService = {
     }
   },
 
-  // Get student performance data
-  getStudentPerformance: async () => {
+  // Get employee performance data
+  getEmployeePerformance: async () => {
     try {
-      const response = await apiClient.get('/students/stats');
+      const response = await apiClient.get('/employees/stats');
       const stats = response.data.data;
 
       // Calculate performance metrics from attendance data
-      const performanceData = stats.byClass?.map(classData => ({
-        class: classData._id,
-        totalStudents: classData.totalInClass,
-        activeStudents: classData.totalActiveInClass,
-        averageAttendance: classData.sections.reduce((acc, section) => 
-          acc + (section.avgAttendance || 0), 0) / classData.sections.length
+      const performanceData = stats.byDepartment?.map(departmentData => ({
+        department: departmentData._id,
+        totalEmployees: departmentData.totalInDepartment,
+        activeEmployees: departmentData.totalActiveInDepartment,
+        averageAttendance: departmentData.positions.reduce((acc, position) => 
+          acc + (position.avgAttendance || 0), 0) / departmentData.positions.length
       })) || [];
 
       return performanceData;
     } catch (error) {
-      console.error('Error fetching student performance:', error);
+      console.error('Error fetching employee performance:', error);
       throw error;
     }
   },
@@ -89,7 +89,7 @@ const reportService = {
         },
         {
           id: 2,
-          name: 'Student Performance Analysis',
+          name: 'Employee Performance Analysis',
           type: 'Performance',
           generated: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           status: 'Processing',
@@ -97,7 +97,7 @@ const reportService = {
         },
         {
           id: 3,
-          name: 'Weekly Class Summary',
+          name: 'Weekly Department Summary',
           type: 'Summary',
           generated: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
           status: 'Ready',
@@ -182,25 +182,25 @@ const reportService = {
     }
   },
 
-  // Get class-wise attendance statistics
-  getClassWiseStats: async () => {
+  // Get department-wise attendance statistics
+  getDepartmentWiseStats: async () => {
     try {
-      const studentsResponse = await apiClient.get('/students/stats');
-      const studentStats = studentsResponse.data.data;
+      const employeesResponse = await apiClient.get('/employees/stats');
+      const employeeStats = employeesResponse.data.data;
 
-      // Combine data for class-wise statistics
-      const classStats = studentStats.byClass?.map(classData => ({
-        className: classData._id,
-        totalStudents: classData.totalInClass,
-        activeStudents: classData.totalActiveInClass,
-        sections: classData.sections,
-        averageAttendance: classData.sections.reduce((acc, section) => 
-          acc + (section.avgAttendance || 0), 0) / classData.sections.length
+      // Combine data for department-wise statistics
+      const departmentStats = employeeStats.byDepartment?.map(departmentData => ({
+        departmentName: departmentData._id,
+        totalEmployees: departmentData.totalInDepartment,
+        activeEmployees: departmentData.totalActiveInDepartment,
+        positions: departmentData.positions,
+        averageAttendance: departmentData.positions.reduce((acc, position) => 
+          acc + (position.avgAttendance || 0), 0) / departmentData.positions.length
       })) || [];
 
-      return classStats;
+      return departmentStats;
     } catch (error) {
-      console.error('Error fetching class-wise stats:', error);
+      console.error('Error fetching department-wise stats:', error);
       throw error;
     }
   }

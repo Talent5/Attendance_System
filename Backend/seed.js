@@ -4,7 +4,7 @@ require('dotenv').config();
 
 // Import models
 const User = require('./models/User');
-const Student = require('./models/Student');
+const Employee = require('./models/Employee');
 const Attendance = require('./models/Attendance');
 const Notification = require('./models/Notification');
 
@@ -22,102 +22,166 @@ const connectDB = async () => {
   }
 };
 
-// Test users data
+// Test users data - includes admins, managers, supervisors, and HR staff
 const testUsers = [
+  // Admin users
   {
     name: 'Admin User',
-    email: 'admin@school.com',
-    password: 'admin123',
+    email: 'admin@company.com',
+    password: 'Admin@123',
     role: 'admin',
     isActive: true,
+    department: 'Administration',
+    phoneNumber: '+1-555-0101',
   },
   {
-    name: 'John Teacher',
-    email: 'teacher@school.com',
-    password: 'teacher123',
-    role: 'teacher',
+    name: 'System Administrator',
+    email: 'sysadmin@company.com',
+    password: 'SysAdmin@123',
+    role: 'admin',
     isActive: true,
+    department: 'Administration',
+    phoneNumber: '+1-555-0102',
   },
   {
-    name: 'Jane Educator',
-    email: 'jane@school.com',
-    password: 'teacher123',
-    role: 'teacher',
+    name: 'Takunda Mundwa',
+    email: 'takunda@company.com',
+    password: 'Takunda@123',
+    role: 'admin',
     isActive: true,
+    department: 'Administration',
+    phoneNumber: '+1-555-0103',
+  },
+  // Manager users
+  {
+    name: 'John Manager',
+    email: 'manager@company.com',
+    password: 'Manager@123',
+    role: 'manager',
+    isActive: true,
+    department: 'Operations',
+    phoneNumber: '+1-555-0201',
+  },
+  {
+    name: 'Sarah Manager',
+    email: 'sarah.manager@company.com',
+    password: 'Sarah@123',
+    role: 'manager',
+    isActive: true,
+    department: 'Operations',
+    phoneNumber: '+1-555-0202',
+  },
+  // Supervisor users
+  {
+    name: 'Alex Supervisor',
+    email: 'supervisor@company.com',
+    password: 'Supervisor@123',
+    role: 'supervisor',
+    isActive: true,
+    department: 'Supervision',
+    phoneNumber: '+1-555-0301',
+  },
+  {
+    name: 'Emma Supervisor',
+    email: 'emma.supervisor@company.com',
+    password: 'Emma@123',
+    role: 'supervisor',
+    isActive: true,
+    department: 'Supervision',
+    phoneNumber: '+1-555-0302',
+  },
+  // HR users
+  {
+    name: 'HR Officer',
+    email: 'hr@company.com',
+    password: 'HR@123',
+    role: 'hr',
+    isActive: true,
+    department: 'Human Resources',
+    phoneNumber: '+1-555-0401',
+  },
+  {
+    name: 'Rachel HR',
+    email: 'rachel.hr@company.com',
+    password: 'Rachel@123',
+    role: 'hr',
+    isActive: true,
+    department: 'Human Resources',
+    phoneNumber: '+1-555-0402',
   },
 ];
 
 // Test students data
 const testStudents = [
   {
-    studentId: 'STU001',
+    employeeId: 'EMP001',
     firstName: 'Alice',
     lastName: 'Johnson',
-    email: 'alice.johnson@student.school.com',
+    email: 'alice.johnson@company.com',
     phoneNumber: '+1234567890',
-    class: 'Grade 10',
-    section: 'A',
-    guardianName: 'Robert Johnson',
-    guardianPhone: '+1234567891',
-    guardianEmail: 'robert.johnson@email.com',
+    department: 'SOFTWARE DEVELOPMENT',
+    position: 'SENIOR DEVELOPER',
+    emergencyContactName: 'Robert Johnson',
+    emergencyContactPhone: '+1234567891',
+    emergencyContactEmail: 'robert.johnson@email.com',
     isActive: true,
-    enrollmentDate: new Date('2024-09-01'),
+    hireDate: new Date('2024-09-01'),
   },
   {
-    studentId: 'STU002',
+    employeeId: 'EMP002',
     firstName: 'Bob',
     lastName: 'Smith',
-    email: 'bob.smith@student.school.com',
+    email: 'bob.smith@company.com',
     phoneNumber: '+1234567892',
-    class: 'Grade 10',
-    section: 'A',
-    guardianName: 'Mary Smith',
-    guardianPhone: '+1234567893',
-    guardianEmail: 'mary.smith@email.com',
+    department: 'IT OPERATIONS',
+    position: 'SYSTEM ADMINISTRATOR',
+    emergencyContactName: 'Mary Smith',
+    emergencyContactPhone: '+1234567893',
+    emergencyContactEmail: 'mary.smith@email.com',
     isActive: true,
-    enrollmentDate: new Date('2024-09-01'),
+    hireDate: new Date('2024-09-01'),
   },
   {
-    studentId: 'STU003',
+    employeeId: 'EMP003',
     firstName: 'Charlie',
     lastName: 'Brown',
-    email: 'charlie.brown@student.school.com',
+    email: 'charlie.brown@company.com',
     phoneNumber: '+1234567894',
-    class: 'Grade 10',
-    section: 'B',
-    guardianName: 'David Brown',
-    guardianPhone: '+1234567895',
-    guardianEmail: 'david.brown@email.com',
+    department: 'NETWORK SECURITY',
+    position: 'SECURITY ANALYST',
+    emergencyContactName: 'David Brown',
+    emergencyContactPhone: '+1234567895',
+    emergencyContactEmail: 'david.brown@email.com',
     isActive: true,
-    enrollmentDate: new Date('2024-09-01'),
+    hireDate: new Date('2024-09-01'),
   },
   {
-    studentId: 'STU004',
+    employeeId: 'EMP004',
     firstName: 'Diana',
     lastName: 'Wilson',
-    email: 'diana.wilson@student.school.com',
+    email: 'diana.wilson@company.com',
     phoneNumber: '+1234567896',
-    class: 'Grade 11',
-    section: 'A',
-    guardianName: 'Sarah Wilson',
-    guardianPhone: '+1234567897',
-    guardianEmail: 'sarah.wilson@email.com',
+    department: 'DATABASE ADMINISTRATION',
+    position: 'DATABASE ADMINISTRATOR',
+    emergencyContactName: 'Sarah Wilson',
+    emergencyContactPhone: '+1234567897',
+    emergencyContactEmail: 'sarah.wilson@email.com',
     isActive: true,
-    enrollmentDate: new Date('2024-09-01'),
+    hireDate: new Date('2024-09-01'),
   },
   {
-    studentId: 'STU005',
+    employeeId: 'EMP005',
     firstName: 'Edward',
     lastName: 'Davis',
-    email: 'edward.davis@student.school.com',
+    email: 'edward.davis@company.com',
     phoneNumber: '+1234567898',
-    class: 'Grade 11',
-    section: 'A',
-    guardianName: 'Jennifer Davis',
-    guardianPhone: '+1234567899',
-    guardianEmail: 'jennifer.davis@email.com',
+    department: 'QUALITY ASSURANCE',
+    position: 'QA ENGINEER',
+    emergencyContactName: 'Jennifer Davis',
+    emergencyContactPhone: '+1234567899',
+    emergencyContactEmail: 'jennifer.davis@email.com',
     isActive: true,
-    enrollmentDate: new Date('2024-09-01'),
+    hireDate: new Date('2024-09-01'),
   },
 ];
 
@@ -156,25 +220,25 @@ const seedUsers = async () => {
 // Function to seed students
 const seedStudents = async () => {
   try {
-    console.log('Seeding students...');
+    console.log('Seeding employees...');
     
-    // Clear existing students
-    await Student.deleteMany({});
+    // Clear existing employees
+    await Employee.deleteMany({});
     
-    // Create students one by one to ensure pre-save middleware runs
-    const createdStudents = [];
-    for (const studentData of testStudents) {
-      const student = new Student(studentData);
-      const savedStudent = await student.save();
-      createdStudents.push(savedStudent);
-      console.log(`✓ Created student: ${savedStudent.firstName} ${savedStudent.lastName} (QR: ${savedStudent.qrCode})`);
+    // Create employees one by one to ensure pre-save middleware runs
+    const createdEmployees = [];
+    for (const employeeData of testStudents) {
+      const employee = new Employee(employeeData);
+      const savedEmployee = await employee.save();
+      createdEmployees.push(savedEmployee);
+      console.log(`✓ Created employee: ${savedEmployee.firstName} ${savedEmployee.lastName} (QR: ${savedEmployee.qrCode})`);
     }
     
-    console.log(`✓ Created ${createdStudents.length} students with auto-generated QR codes`);
+    console.log(`✓ Created ${createdEmployees.length} employees with auto-generated QR codes`);
     
-    return createdStudents;
+    return createdEmployees;
   } catch (error) {
-    console.error('Error seeding students:', error);
+    console.error('Error seeding employees:', error);
     throw error;
   }
 };
@@ -298,7 +362,7 @@ const seedNotifications = async (students, attendance) => {
   }
 };
 
-// Main seed function
+// Main seed function - focused on admin/user seeding
 const seedDatabase = async () => {
   try {
     console.log('🌱 Starting database seeding...');
@@ -306,20 +370,25 @@ const seedDatabase = async () => {
     await connectDB();
     
     const users = await seedUsers();
-    const students = await seedStudents();
-    const attendance = await seedAttendance(students, users);
-    const notifications = await seedNotifications(students, attendance);
     
     console.log('\n✅ Database seeding completed successfully!');
     console.log('\n📋 Summary:');
-    console.log(`- Users: ${users.length}`);
-    console.log(`- Students: ${students.length}`);
-    console.log(`- Attendance Records: ${attendance.length}`);
-    console.log(`- Notifications: ${notifications.length}`);
+    console.log(`- Users Created: ${users.length}`);
     
-    console.log('\n🔑 Test Credentials:');
-    console.log('Admin: admin@school.com / admin123');
-    console.log('Teacher: teacher@school.com / teacher123');
+    console.log('\n🔑 Login Credentials:');
+    console.log('\n👑 ADMIN USERS:');
+    console.log('  1. admin@company.com / Admin@123');
+    console.log('  2. sysadmin@company.com / SysAdmin@123');
+    console.log('  3. takunda@company.com / Takunda@123');
+    console.log('\n📊 MANAGER USERS:');
+    console.log('  1. manager@company.com / Manager@123');
+    console.log('  2. sarah.manager@company.com / Sarah@123');
+    console.log('\n👔 SUPERVISOR USERS:');
+    console.log('  1. supervisor@company.com / Supervisor@123');
+    console.log('  2. emma.supervisor@company.com / Emma@123');
+    console.log('\n👨‍💼 HR USERS:');
+    console.log('  1. hr@company.com / HR@123');
+    console.log('  2. rachel.hr@company.com / Rachel@123');
     
     process.exit(0);
   } catch (error) {
@@ -336,7 +405,4 @@ if (require.main === module) {
 module.exports = {
   seedDatabase,
   seedUsers,
-  seedStudents,
-  seedAttendance,
-  seedNotifications,
 };

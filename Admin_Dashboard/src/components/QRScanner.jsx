@@ -27,7 +27,7 @@ const QRScanner = ({ onScanComplete, onClose }) => {
       });
 
       if (result.success) {
-        setMessage(`✅ ${result.message} - ${result.student?.firstName} ${result.student?.lastName}`);
+        setMessage(`✅ ${result.message} - ${result.employee?.firstName || result.student?.firstName} ${result.employee?.lastName || result.student?.lastName}`);
         setMessageType('success');
         setManualCode('');
         

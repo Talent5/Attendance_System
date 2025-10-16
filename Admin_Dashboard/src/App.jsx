@@ -1,13 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { StudentProvider } from './contexts/StudentContext';
+import { EmployeeProvider } from './contexts/EmployeeContext';
 import { AttendanceProvider } from './contexts/AttendanceContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import LayoutWithSidebar from './components/Layout/LayoutWithSidebar';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Students from './pages/Students';
+import Employees from './pages/Employees';
 import Attendance from './pages/Attendance';
 import Reports from './pages/Reports';
 import IDCardGenerator from './pages/IDCardGenerator';
@@ -21,7 +21,7 @@ import './App.css'
 function App() {
   return (
     <AuthProvider>
-      <StudentProvider>
+      <EmployeeProvider>
         <AttendanceProvider>
           <OnboardingProvider>
             <Router>
@@ -35,7 +35,7 @@ function App() {
                     <LayoutWithSidebar>
                       <Routes>
                         <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/students" element={<Students />} />
+                        <Route path="/employees" element={<Employees />} />
                         <Route path="/attendance" element={<Attendance />} />
                         <Route path="/absentee" element={<AbsenteeManagement />} />
                         <Route path="/reports" element={<Reports />} />
@@ -76,7 +76,7 @@ function App() {
             />
           </OnboardingProvider>
         </AttendanceProvider>
-      </StudentProvider>
+      </EmployeeProvider>
     </AuthProvider>
   )
 }

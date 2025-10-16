@@ -25,8 +25,8 @@ const Sidebar = ({ isOpen, onClose }) => {
       )
     },
     {
-      name: 'Students',
-      path: '/students',
+      name: 'Employees',
+      path: '/employees',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -103,11 +103,11 @@ const Sidebar = ({ isOpen, onClose }) => {
             <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
               <img
                 src={logo}
-                alt="EduTrack Logo"
+                alt="Attendance System Logo"
                 className="w-7 h-7 rounded-full object-contain"
               />
             </div>
-            <span className="text-xl font-bold">EduTrack</span>
+            <span className="text-xl font-bold">Attendance System</span>
           </div>
           <button
             onClick={onClose}

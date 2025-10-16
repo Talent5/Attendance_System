@@ -3,42 +3,42 @@ const DEMO_USERS = [
   {
     id: '1',
     name: 'Admin User',
-    email: 'admin@school.com',
+    email: 'admin@company.com',
     role: 'admin'
   },
   {
     id: '2',
-    name: 'Teacher John',
-    email: 'teacher@school.com',
-    role: 'teacher'
+    name: 'Manager John',
+    email: 'manager@company.com',
+    role: 'manager'
   }
 ];
 
-const DEMO_STUDENTS = [
+const DEMO_EMPLOYEES = [
   {
     _id: '1',
     name: 'John Doe',
-    email: 'john@student.com',
-    studentId: 'ST001',
-    grade: '10',
+    email: 'john@company.com',
+    employeeId: 'EMP001',
+    department: 'Engineering',
     phone: '+1234567890',
     address: '123 Main St'
   },
   {
     _id: '2',
     name: 'Jane Smith',
-    email: 'jane@student.com',
-    studentId: 'ST002',
-    grade: '11',
+    email: 'jane@company.com',
+    employeeId: 'EMP002',
+    department: 'Marketing',
     phone: '+1234567891',
     address: '456 Oak Ave'
   },
   {
     _id: '3',
     name: 'Bob Johnson',
-    email: 'bob@student.com',
-    studentId: 'ST003',
-    grade: '12',
+    email: 'bob@company.com',
+    employeeId: 'EMP003',
+    department: 'Sales',
     phone: '+1234567892',
     address: '789 Pine St'
   }
@@ -47,15 +47,15 @@ const DEMO_STUDENTS = [
 const DEMO_ATTENDANCE = [
   {
     _id: '1',
-    studentId: '1',
+    employeeId: '1',
     timestamp: new Date().toISOString(),
-    student: DEMO_STUDENTS[0]
+    employee: DEMO_EMPLOYEES[0]
   },
   {
     _id: '2',
-    studentId: '2',
+    employeeId: '2',
     timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    student: DEMO_STUDENTS[1]
+    employee: DEMO_EMPLOYEES[1]
   }
 ];
 
@@ -87,40 +87,40 @@ export const demoAuthService = {
   }
 };
 
-export const demoStudentService = {
-  async getAllStudents() {
+export const demoEmployeeService = {
+  async getAllEmployees() {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return [...DEMO_STUDENTS];
+    return [...DEMO_EMPLOYEES];
   },
 
-  async createStudent(studentData) {
+  async createEmployee(employeeData) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const newStudent = {
-      ...studentData,
-      _id: (DEMO_STUDENTS.length + 1).toString()
+    const newEmployee = {
+      ...employeeData,
+      _id: (DEMO_EMPLOYEES.length + 1).toString()
     };
-    DEMO_STUDENTS.push(newStudent);
-    return newStudent;
+    DEMO_EMPLOYEES.push(newEmployee);
+    return newEmployee;
   },
 
-  async updateStudent(id, studentData) {
+  async updateEmployee(id, employeeData) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const index = DEMO_STUDENTS.findIndex(s => s._id === id);
+    const index = DEMO_EMPLOYEES.findIndex(s => s._id === id);
     if (index !== -1) {
-      DEMO_STUDENTS[index] = { ...DEMO_STUDENTS[index], ...studentData };
-      return DEMO_STUDENTS[index];
+      DEMO_EMPLOYEES[index] = { ...DEMO_EMPLOYEES[index], ...employeeData };
+      return DEMO_EMPLOYEES[index];
     }
-    throw new Error('Student not found');
+    throw new Error('employee not found');
   },
 
-  async deleteStudent(id) {
+  async deleteEmployee(id) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const index = DEMO_STUDENTS.findIndex(s => s._id === id);
+    const index = DEMO_EMPLOYEES.findIndex(s => s._id === id);
     if (index !== -1) {
-      DEMO_STUDENTS.splice(index, 1);
+      DEMO_EMPLOYEES.splice(index, 1);
       return { success: true };
     }
-    throw new Error('Student not found');
+    throw new Error('employee not found');
   }
 };
 
@@ -129,8 +129,8 @@ export const demoAttendanceService = {
     await new Promise(resolve => setTimeout(resolve, 500));
     let filtered = [...DEMO_ATTENDANCE];
     
-    if (filters.studentId) {
-      filtered = filtered.filter(a => a.studentId === filters.studentId);
+    if (filters.employeeId) {
+      filtered = filtered.filter(a => a.employeeId === filters.employeeId);
     }
     
     if (filters.startDate) {
@@ -144,14 +144,14 @@ export const demoAttendanceService = {
     return filtered;
   },
 
-  async markAttendance(studentId) {
+  async markAttendance(employeeId) {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const student = DEMO_STUDENTS.find(s => s._id === studentId);
+    const employee = DEMO_EMPLOYEES.find(s => s._id === employeeId);
     const newRecord = {
       _id: (DEMO_ATTENDANCE.length + 1).toString(),
-      studentId,
+      employeeId,
       timestamp: new Date().toISOString(),
-      student
+      employee
     };
     DEMO_ATTENDANCE.push(newRecord);
     return newRecord;
