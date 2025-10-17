@@ -7,9 +7,7 @@ const IS_DEV = process.env.NODE_ENV === 'development' || process.env.EXPO_PUBLIC
 const config = {
   // Backend API base URL
   // Change this to match your backend server
-  API_BASE_URL: IS_DEV 
-    ? 'http://10.90.170.108:5000' // Development - backend server running on port 5000
-    : 'https://attendance-system-sktv.onrender.com', // Production,
+  API_BASE_URL: 'https://attendance-system-sktv.onrender.com', // Production backend
   
   // Environment info (for debugging)
   IS_DEV,

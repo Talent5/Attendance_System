@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-// Use local backend for development, production URL for production
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Production backend URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://attendance-system-sktv.onrender.com/api';
+
+// Debug logging
+console.log('🔧 API Configuration:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_URL: API_URL,
+  mode: import.meta.env.MODE
+});
 
 const apiClient = axios.create({
   baseURL: API_URL,
