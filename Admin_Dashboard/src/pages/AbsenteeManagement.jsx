@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../services/apiClient';
 
 const AbsenteeManagement = () => {
-  const [absentStudents, setAbsentStudents] = useState([]);
+  const [absentEmployees, setAbsentEmployees] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [scheduleInfo, setScheduleInfo] = useState(null);
   const [statistics, setStatistics] = useState(null);
-  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [openNotificationDialog, setOpenNotificationDialog] = useState(false);
   const [openTestDialog, setOpenTestDialog] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
@@ -48,19 +48,19 @@ const AbsenteeManagement = () => {
     setTimeout(() => setNotification({ show: false, message: '', type: 'info' }), 5000);
   }, []);
 
-  const loadAbsentStudents = React.useCallback(async () => {
+  const loadAbsentEmployees = React.useCallback(async () => {
     setLoading(true);
     try {
       const response = await apiClient.get(`/absentee/absent-students?date=${selectedDate}`);
       
       if (response.data.success) {
-        setAbsentStudents(response.data.data.students);
+        setAbsentEmployees(response.data.data.students);
       } else {
-        showNotification('Failed to load absent students', 'error');
+        showNotification('Failed to load absent employees', 'error');
       }
     } catch (error) {
-      console.error('Error loading absent students:', error);
-      showNotification('Error loading absent students', 'error');
+      console.error('Error loading absent employees:', error);
+      showNotification('Error loading absent employees', 'error');
     } finally {
       setLoading(false);
     }
@@ -95,10 +95,10 @@ const AbsenteeManagement = () => {
   }, [getDateRangeForStats]);
 
   useEffect(() => {
-    loadAbsentStudents();
+    loadAbsentEmployees();
     loadScheduleInfo();
     loadStatistics();
-  }, [loadAbsentStudents, loadScheduleInfo, loadStatistics]);
+  }, [loadAbsentEmployees, loadScheduleInfo, loadStatistics]);
 
   const handleManualCheck = async () => {
     setLoading(true);
@@ -107,7 +107,7 @@ const AbsenteeManagement = () => {
       
       if (response.data.success) {
         showNotification('Manual absentee check completed successfully', 'success');
-        loadAbsentStudents();
+        loadAbsentEmployees();
       } else {
         showNotification('Failed to run manual check', 'error');
       }
@@ -120,21 +120,21 @@ const AbsenteeManagement = () => {
   };
 
   const handleSendNotifications = async () => {
-    if (selectedStudents.length === 0) {
-      showNotification('Please select students to notify', 'warning');
+    if (selectedEmployees.length === 0) {
+      showNotification('Please select employees to notify', 'warning');
       return;
     }
 
     setLoading(true);
     try {
       const response = await apiClient.post('/absentee/send-notification', {
-        studentIds: selectedStudents,
+        studentIds: selectedEmployees,
         customMessage: customMessage || undefined
       });
       
       if (response.data.success) {
-        showNotification(`Notifications sent to ${selectedStudents.length} students`, 'success');
-        setSelectedStudents([]);
+        showNotification(`Notifications sent to ${selectedEmployees.length} emergency contacts`, 'success');
+        setSelectedEmployees([]);
         setCustomMessage('');
         setOpenNotificationDialog(false);
       } else {
@@ -178,19 +178,19 @@ const AbsenteeManagement = () => {
     }
   };
 
-  const handleStudentSelection = (studentId) => {
-    setSelectedStudents(prev => 
-      prev.includes(studentId) 
-        ? prev.filter(id => id !== studentId)
-        : [...prev, studentId]
+  const handleEmployeeSelection = (employeeId) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
     );
   };
 
   const handleSelectAll = () => {
-    if (selectedStudents.length === absentStudents.length) {
-      setSelectedStudents([]);
+    if (selectedEmployees.length === absentEmployees.length) {
+      setSelectedEmployees([]);
     } else {
-      setSelectedStudents(absentStudents.map(student => student._id));
+      setSelectedEmployees(absentEmployees.map(employee => employee._id));
     }
   };
 
@@ -204,7 +204,7 @@ const AbsenteeManagement = () => {
           </svg>
           Absentee Management
         </h1>
-        <p className="text-gray-600 mt-1">Automated guardian notifications for absent students</p>
+        <p className="text-gray-600 mt-1">Automated emergency contact notifications for absent employees</p>
       </div>
 
       {/* Notification */}
@@ -307,7 +307,7 @@ const AbsenteeManagement = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
             <button
-              onClick={loadAbsentStudents}
+              onClick={loadAbsentEmployees}
               disabled={loading}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 flex items-center justify-center gap-2"
             >
@@ -345,35 +345,35 @@ const AbsenteeManagement = () => {
         </div>
       </div>
 
-      {/* Absent Students Table */}
+      {/* Absent Employees Table */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            Absent Students - {formatDate(selectedDate)}
-            {absentStudents.length > 0 && (
+            Absent Employees - {formatDate(selectedDate)}
+            {absentEmployees.length > 0 && (
               <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                {absentStudents.length} absent
+                {absentEmployees.length} absent
               </span>
             )}
           </h2>
-          {absentStudents.length > 0 && (
+          {absentEmployees.length > 0 && (
             <div className="flex gap-2">
               <button
                 onClick={handleSelectAll}
                 className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {selectedStudents.length === absentStudents.length ? 'Deselect All' : 'Select All'}
+                {selectedEmployees.length === absentEmployees.length ? 'Deselect All' : 'Select All'}
               </button>
               <button
                 onClick={() => setOpenNotificationDialog(true)}
-                disabled={selectedStudents.length === 0}
+                disabled={selectedEmployees.length === 0}
                 className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
-                Notify Selected ({selectedStudents.length})
+                Notify Selected ({selectedEmployees.length})
               </button>
             </div>
           )}
@@ -383,7 +383,7 @@ const AbsenteeManagement = () => {
           <div className="flex justify-center items-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        ) : absentStudents.length === 0 ? (
+        ) : absentEmployees.length === 0 ? (
           <div className="bg-green-50 border border-green-200 rounded-md p-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -393,7 +393,7 @@ const AbsenteeManagement = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800">
-                  Great news! No students are absent for this date.
+                  Great news! No employees are absent for this date.
                 </p>
               </div>
             </div>
@@ -406,22 +406,22 @@ const AbsenteeManagement = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <input
                       type="checkbox"
-                      checked={selectedStudents.length === absentStudents.length}
+                      checked={selectedEmployees.length === absentEmployees.length}
                       onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Student ID
+                    Employee ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Class
+                    Department
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Guardian
+                    Emergency Contact
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact Info
@@ -432,47 +432,47 @@ const AbsenteeManagement = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {absentStudents.map((student) => (
-                  <tr key={student._id} className="hover:bg-gray-50">
+                {absentEmployees.map((employee) => (
+                  <tr key={employee._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
-                        checked={selectedStudents.includes(student._id)}
-                        onChange={() => handleStudentSelection(student._id)}
+                        checked={selectedEmployees.includes(employee._id)}
+                        onChange={() => handleEmployeeSelection(employee._id)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {student.studentId}
+                      {employee.studentId}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{student.fullName}</div>
+                      <div className="text-sm font-medium text-gray-900">{employee.fullName}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {student.class}{student.section ? `-${student.section}` : ''}
+                        {employee.class}{employee.section ? `-${employee.section}` : ''}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.guardianName}
+                      {employee.guardianName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="space-y-1">
-                        {student.guardianEmail && (
+                        {employee.guardianEmail && (
                           <div className="flex items-center text-xs text-gray-600">
                             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                               <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                             </svg>
-                            {student.guardianEmail}
+                            {employee.guardianEmail}
                           </div>
                         )}
-                        {student.guardianPhone && (
+                        {employee.guardianPhone && (
                           <div className="flex items-center text-xs text-gray-600">
                             <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                             </svg>
-                            {student.guardianPhone}
+                            {employee.guardianPhone}
                           </div>
                         )}
                       </div>
@@ -480,7 +480,7 @@ const AbsenteeManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => {
-                          setSelectedStudents([student._id]);
+                          setSelectedEmployees([employee._id]);
                           setOpenNotificationDialog(true);
                         }}
                         className="text-blue-600 hover:text-blue-900 p-1 rounded"
@@ -507,7 +507,7 @@ const AbsenteeManagement = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Send Absentee Notifications</h3>
               <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
                 <p className="text-sm text-blue-800">
-                  Sending notifications to {selectedStudents.length} guardian(s)
+                  Sending notifications to {selectedEmployees.length} emergency contact(s)
                 </p>
               </div>
               <div className="mb-4">
