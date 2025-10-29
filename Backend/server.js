@@ -48,7 +48,16 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'Cache-Control',
+    'Pragma',
+    'Expires'
+  ],
   exposedHeaders: ['Content-Range', 'X-Content-Range', 'X-Total-Count'],
   maxAge: 86400, // 24 hours - increase to reduce preflight requests
   preflightContinue: false,

@@ -1,99 +1,150 @@
 # CORS Fix Guide
 
 ## Problem
-The frontend at `https://attendance-system-blue.vercel.app` is getting CORS errors when trying to connect to the backend at `https://attendance-system-sktv.onrender.com`.
+The frontend at `https://attendance-system-blue.vercel.app` is getting CORS errors when trying to connect to the backend at `https://attendance-system-sktv.onrender.com`, especially during logout operations.
 
-## Error Messages
+## Common Error Messages
 ```
-CORS Missing Allow Origin
 Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource
+CORS request did not succeed
+Status code: (null)
+CORS Missing Allow Origin
 Status code: 503
 ```
 
+## Root Causes
+1. **Render Free Tier Sleep Mode**: Backend sleeps after 15 minutes of inactivity
+2. **Initial Wake-up Delay**: First request after sleep takes 30-60 seconds
+3. **Missing CORS Headers**: Preflight OPTIONS requests failing
+4. **Network Timeouts**: Frontend timing out before backend wakes up
+
 ## Solution Applied
 
-### 1. Updated Backend CORS Configuration
-The `Backend/server.js` file has been updated with:
-- More permissive CORS settings
-- Explicit OPTIONS request handling
-- Support for all necessary HTTP methods
-- Request logging for debugging
+### 1. Enhanced Backend CORS Configuration
+Updated `Backend/server.js` with:
+- Longer preflight cache (24 hours instead of 10 minutes)
+- Explicit OPTIONS success status code (204)
+- Additional allowed headers including 'Accept' and 'Origin'
+- Better logging for debugging
 
-### 2. What Was Changed
 ```javascript
-// Added to CORS options:
-- methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
-- allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-- exposedHeaders: ['Content-Range', 'X-Content-Range']
-- maxAge: 600
-
-// Added explicit OPTIONS handler:
-app.options('*', cors(corsOptions));
-
-// Added request logging:
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path} - Origin: ${req.get('origin') || 'none'}`);
-  next();
-});
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (origin && origin.includes('localhost')) return callback(null, true);
+    if (origin && origin.endsWith('.vercel.app')) return callback(null, true);
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all origins (can be restricted later)
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'X-Total-Count'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
 ```
+
+### 2. Improved Frontend Logout Handling
+Updated `Admin_Dashboard/src/services/authService.js` to:
+- Add 5-second timeout for logout requests
+- Gracefully handle CORS/network errors
+- Always clear local storage regardless of backend response
+- Better error logging
+
+```javascript
+async logout() {
+  try {
+    const refreshToken = localStorage.getItem('refreshToken');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    if (refreshToken) {
+      try {
+        await apiClient.post('/auth/logout', 
+          { refreshToken },
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+      } catch (logoutError) {
+        clearTimeout(timeoutId);
+        console.warn('Backend logout failed (this is okay):', logoutError);
+      }
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // ALWAYS clear local storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+  }
+}
+```
+
+### 3. Enhanced API Client
+Updated `Admin_Dashboard/src/services/apiClient.js` with:
+- 30-second timeout for all requests
+- `withCredentials: true` for CORS
+- Better error logging and handling
+- Special handling for logout requests in auth errors
 
 ## Deployment Steps
 
-### Option 1: Deploy to Render (Recommended)
+### 1. Deploy Backend Changes
 
-1. **Commit the changes:**
-   ```bash
-   cd Backend
-   git add server.js
-   git commit -m "Fix CORS configuration for Vercel frontend"
-   git push origin main
-   ```
+```powershell
+# Navigate to project root
+cd "c:\Users\Takunda Mundwa\Desktop\Attendance_QR_System"
 
-2. **Trigger Render deployment:**
-   - Go to https://dashboard.render.com
-   - Find your "attendance-system-sktv" service
-   - Click "Manual Deploy" → "Deploy latest commit"
-   - Wait for deployment to complete (usually 2-5 minutes)
+# Stage changes
+git add Backend/server.js
 
-3. **Verify deployment:**
-   - Check the logs in Render dashboard
-   - Look for "MongoDB connected successfully" message
-   - Test the health endpoint: https://attendance-system-sktv.onrender.com/health
+# Commit
+git commit -m "fix: Enhance CORS configuration for better reliability and logout handling"
 
-### Option 2: Set Environment Variables (If needed)
+# Push to trigger Render deployment
+git push origin main
+```
 
-In Render dashboard:
-1. Go to your service settings
-2. Navigate to "Environment" tab
-3. Add/Update these variables:
-   ```
-   FRONTEND_URL=https://attendance-system-blue.vercel.app
-   NODE_ENV=production
-   ```
-4. Save changes (this will trigger a redeploy)
+### 2. Deploy Frontend Changes
 
-### Option 3: Test Locally First
+```powershell
+# Stage frontend changes
+git add Admin_Dashboard/src/services/apiClient.js Admin_Dashboard/src/services/authService.js
 
-1. **Test CORS configuration locally:**
-   ```bash
-   cd Backend
-   node test-cors.js
-   ```
+# Commit
+git commit -m "fix: Improve logout error handling and CORS reliability"
 
-2. **Start local server:**
-   ```bash
-   npm start
-   ```
+# Push to trigger Vercel deployment
+git push origin main
+```
 
-3. **In another terminal, test:**
-   ```bash
-   curl -X OPTIONS http://localhost:5000/api/auth/login \
-     -H "Origin: https://attendance-system-blue.vercel.app" \
-     -H "Access-Control-Request-Method: POST" \
-     -v
-   ```
+### 3. Verify Deployment
 
-## Troubleshooting
+**Test Backend:**
+```powershell
+# Run the CORS test script
+node test-logout-cors.js
+```
+
+**Test in Browser:**
+1. Open DevTools (F12)
+2. Go to Console tab
+3. Paste and run:
+```javascript
+fetch('https://attendance-system-sktv.onrender.com/health', {
+  headers: { 'Origin': 'https://attendance-system-blue.vercel.app' }
+})
+.then(r => r.json())
+.then(d => console.log('✅ Backend is awake:', d))
+.catch(e => console.error('❌ Backend error:', e));
+```
+
+## Testing
 
 ### If CORS errors persist:
 

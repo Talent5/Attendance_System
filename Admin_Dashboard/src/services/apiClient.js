@@ -14,10 +14,7 @@ const apiClient = axios.create({
   baseURL: API_URL,
   timeout: 30000, // 30 second timeout
   headers: {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache',
-    'Expires': '0'
+    'Content-Type': 'application/json'
   },
   withCredentials: true // Enable credentials for CORS
 });
