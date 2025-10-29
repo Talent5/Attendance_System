@@ -23,7 +23,7 @@ const app = express();
 app.use(helmet());
 app.use(compression());
 
-// CORS configuration
+// CORS configuration - Enhanced for better reliability
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -48,14 +48,16 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 600 // 10 minutes
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'X-Total-Count'],
+  maxAge: 86400, // 24 hours - increase to reduce preflight requests
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests
+// Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 // Log all incoming requests for debugging

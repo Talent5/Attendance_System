@@ -104,15 +104,40 @@ export const authService = {
   async logout() {
     try {
       const refreshToken = localStorage.getItem('refreshToken');
+      
+      // Set a timeout for the logout request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       if (refreshToken) {
-        await apiClient.post('/auth/logout', { refreshToken });
+        try {
+          await apiClient.post('/auth/logout', 
+            { refreshToken },
+            { signal: controller.signal }
+          );
+          clearTimeout(timeoutId);
+        } catch (logoutError) {
+          clearTimeout(timeoutId);
+          // Log but don't throw - we'll clear local storage anyway
+          console.warn('Backend logout failed (this is okay):', {
+            message: logoutError.message,
+            code: logoutError.code,
+            isNetworkError: logoutError.code === 'ERR_NETWORK' || !logoutError.response
+          });
+        }
       }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Always clear local storage
+      // ALWAYS clear local storage regardless of backend response
+      // This ensures the user is logged out on the frontend
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
+      
+      // Optional: Clear any other user-related data
+      localStorage.removeItem('user');
+      
+      console.log('✅ Local session cleared successfully');
     }
   },
 
