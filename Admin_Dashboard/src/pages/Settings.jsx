@@ -57,23 +57,23 @@ const Settings = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-6">General Settings</h3>
             
             <div className="space-y-6">
-              {/* School Information */}
+              {/* Company Information */}
               <div>
-                <h4 className="text-md font-medium text-gray-900 mb-4">School Information</h4>
+                <h4 className="text-md font-medium text-gray-900 mb-4">Company Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">School Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
                     <input
                       type="text"
-                      defaultValue="EduTrack High School"
+                      defaultValue="Your Company Name"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">School Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Code</label>
                     <input
                       type="text"
-                      defaultValue="ETH001"
+                      defaultValue="COMP001"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -81,7 +81,7 @@ const Settings = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
                     <input
                       type="text"
-                      defaultValue="123 Education Street"
+                      defaultValue="123 Business Street"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
@@ -96,22 +96,22 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Academic Settings */}
+              {/* Business Settings */}
               <div className="border-t pt-6">
-                <h4 className="text-md font-medium text-gray-900 mb-4">Academic Settings</h4>
+                <h4 className="text-md font-medium text-gray-900 mb-4">Business Settings</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fiscal Year</label>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                       <option>2024-2025</option>
                       <option>2025-2026</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Semester</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Period</label>
                     <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                      <option>Fall 2024</option>
-                      <option>Spring 2025</option>
+                      <option>Q4 2024</option>
+                      <option>Q1 2025</option>
                     </select>
                   </div>
                   <div>
@@ -187,7 +187,7 @@ const Settings = () => {
                 </div>
                 <div className="text-left">
                   <h4 className="text-sm font-medium text-gray-900">Import Data</h4>
-                  <p className="text-sm text-gray-500">Import student or user data</p>
+                  <p className="text-sm text-gray-500">Import employee or user data</p>
                 </div>
               </button>
               

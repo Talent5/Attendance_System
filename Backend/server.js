@@ -30,7 +30,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     // Allow localhost for development
-    if (origin.includes('localhost')) return callback(null, true);
+    if (origin && origin.includes('localhost')) return callback(null, true);
 
     // Allow ALL Vercel domains (*.vercel.app)
     if (origin && origin.endsWith('.vercel.app')) {
@@ -42,13 +42,21 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Reject other origins
-    return callback(new Error('Not allowed by CORS'));
+    // Allow other origins with a warning (for development/testing)
+    logger.warn(`CORS: Allowing origin: ${origin}`);
+    return callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 600 // 10 minutes
 };
 
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
