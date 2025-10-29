@@ -105,8 +105,8 @@ const schemas = {
         'any.required': 'Password is required'
       }),
     role: Joi.string()
-      .valid('admin', 'teacher')
-      .default('teacher'),
+      .valid('admin', 'manager', 'supervisor', 'hr')
+      .default('manager'),
     phoneNumber: Joi.string()
       .pattern(/^[\d\s\-\+\(\)]+$/)
       .optional()

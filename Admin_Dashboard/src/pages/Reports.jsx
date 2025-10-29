@@ -325,7 +325,7 @@ const Reports = () => {
               </svg>
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">Active Teachers</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Active Managers</h3>
               <p className="text-2xl font-bold text-purple-600">{stats.activeManagers}</p>
             </div>
           </div>

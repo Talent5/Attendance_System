@@ -6,7 +6,7 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
     email: user?.email || '',
     password: '',
     confirmPassword: '',
-    role: user?.role || 'teacher',
+    role: user?.role || 'manager',
     phoneNumber: user?.phoneNumber || '',
     department: user?.department || '',
     isActive: user?.isActive !== undefined ? user.isActive : true
@@ -173,8 +173,11 @@ const UserForm = ({ user, onSubmit, onCancel }) => {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="teacher">Teacher</option>
+              <option value="">Select Role</option>
               <option value="admin">Administrator</option>
+              <option value="manager">Manager</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="hr">Human Resources</option>
             </select>
           </div>
 

@@ -92,16 +92,19 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware to check if user is teacher or admin
-const requireTeacherOrAdmin = (req, res, next) => {
-  if (!req.user || !['teacher', 'admin'].includes(req.user.role)) {
+// Middleware to check if user is manager or admin
+const requireManagerOrAdmin = (req, res, next) => {
+  if (!req.user || !['manager', 'admin'].includes(req.user.role)) {
     return res.status(403).json({
       success: false,
-      error: { message: 'Teacher or admin access required' }
+      error: { message: 'Manager or admin access required' }
     });
   }
   next();
 };
+
+// Legacy alias for backward compatibility
+const requireTeacherOrAdmin = requireManagerOrAdmin;
 
 // Optional authentication (doesn't fail if no token)
 const optionalAuth = async (req, res, next) => {
@@ -183,7 +186,8 @@ module.exports = {
   authenticate,
   authorize,
   requireAdmin,
-  requireTeacherOrAdmin,
+  requireManagerOrAdmin,
+  requireTeacherOrAdmin, // Legacy alias
   optionalAuth,
   checkOwnershipOrAdmin,
   addUserToLogs

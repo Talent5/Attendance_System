@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { employeeService } from '../services/employeeService';
+import toast from 'react-hot-toast';
 
 import EmployeeForm from '../components/EmployeeForm';
 import PrintIdCard from '../components/PrintIdCard';
@@ -33,6 +34,7 @@ const Employees = () => {
       setEmployees(data);
     } catch (error) {
       console.error('Error fetching employees:', error);
+      toast.error('Failed to fetch employees');
     } finally {
       setLoading(false);
     }
@@ -51,10 +53,16 @@ const Employees = () => {
   const handleDeleteEmployee = async (id) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
       try {
-        await employeeService.deleteEmployee(id);
-        fetchEmployees();
+        const response = await employeeService.deleteEmployee(id);
+        if (response.success) {
+          toast.success(response.message || 'Employee deleted successfully!');
+          fetchEmployees();
+        } else {
+          toast.error(response.message || 'Failed to delete employee');
+        }
       } catch (error) {
         console.error('Error deleting employee:', error);
+        toast.error(error.message || 'An error occurred while deleting the employee');
       }
     }
   };
@@ -66,15 +74,24 @@ const Employees = () => {
 
   const handleFormSubmit = async (employeeData) => {
     try {
+      let response;
       if (editingEmployee) {
-        await employeeService.updateEmployee(editingEmployee._id, employeeData);
+        response = await employeeService.updateEmployee(editingEmployee._id, employeeData);
       } else {
-        await employeeService.createEmployee(employeeData);
+        response = await employeeService.createEmployee(employeeData);
       }
-      setShowForm(false);
-      fetchEmployees();
+      
+      if (response.success) {
+        toast.success(response.message || (editingEmployee ? 'Employee updated successfully!' : 'Employee created successfully!'));
+        setShowForm(false);
+        setEditingEmployee(null);
+        fetchEmployees();
+      } else {
+        toast.error(response.message || 'Failed to save employee');
+      }
     } catch (error) {
       console.error('Error saving employee:', error);
+      toast.error(error.message || 'An error occurred while saving the employee');
     }
   };
 

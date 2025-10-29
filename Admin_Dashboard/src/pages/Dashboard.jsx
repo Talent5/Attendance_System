@@ -211,7 +211,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white">
-                  {user?.role === 'admin' ? 'Admin Dashboard' : 'Teacher Dashboard'}
+                  {user?.role === 'admin' ? 'Admin Dashboard' : 'Manager Dashboard'}
                 </h1>
                 <p className="text-lg text-blue-100 mt-1">
                   Welcome back, <strong>{user?.name}</strong>
@@ -475,8 +475,8 @@ const Dashboard = () => {
               </div>
             </div>
             
-            {/* Quick Actions for Teachers */}
-            {user?.role === 'teacher' && (
+            {/* Quick Actions for Managers */}
+            {user?.role !== 'admin' && (
               <div className="bg-white shadow-lg rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <div className="p-2 bg-purple-100 rounded-lg mr-3">
@@ -484,7 +484,7 @@ const Dashboard = () => {
                       <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                     </svg>
                   </div>
-                  Teacher Tools
+                  Manager Tools
                 </h3>
                 <div className="space-y-3">
                   <button 
@@ -635,7 +635,7 @@ const Dashboard = () => {
               </svg>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No attendance records today</h3>
               <p className="text-gray-500 mb-4">Start scanning QR codes to see attendance records here</p>
-              {user?.role === 'teacher' && (
+              {user?.role !== 'admin' && (
                 <button 
                   onClick={() => setShowQRScanner(true)}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
