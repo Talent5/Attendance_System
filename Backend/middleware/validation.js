@@ -335,6 +335,176 @@ const schemas = {
       .allow('')
   }),
 
+  // Employee validation schemas
+  employeeCreate: Joi.object({
+    employeeId: Joi.string()
+      .trim()
+      .uppercase()
+      .pattern(/^[A-Z0-9]+$/)
+      .min(3)
+      .max(20)
+      .required()
+      .messages({
+        'string.pattern.base': 'Employee ID can only contain letters and numbers',
+        'any.required': 'Employee ID is required'
+      }),
+    firstName: Joi.string()
+      .trim()
+      .min(2)
+      .max(50)
+      .required()
+      .messages({
+        'any.required': 'First name is required'
+      }),
+    lastName: Joi.string()
+      .trim()
+      .min(2)
+      .max(50)
+      .required()
+      .messages({
+        'any.required': 'Last name is required'
+      }),
+    email: Joi.string()
+      .email()
+      .trim()
+      .lowercase()
+      .optional()
+      .allow(''),
+    phoneNumber: Joi.string()
+      .pattern(/^[\d\s\-\+\(\)]+$/)
+      .optional()
+      .allow(''),
+    department: Joi.string()
+      .trim()
+      .uppercase()
+      .required()
+      .messages({
+        'any.required': 'Department is required'
+      }),
+    position: Joi.string()
+      .trim()
+      .uppercase()
+      .default('STAFF'),
+    employeeNumber: Joi.string()
+      .trim()
+      .optional()
+      .allow(''),
+    dateOfBirth: Joi.date()
+      .max('now')
+      .optional(),
+    gender: Joi.string()
+      .valid('male', 'female', 'other')
+      .lowercase()
+      .optional(),
+    emergencyContactName: Joi.string()
+      .trim()
+      .min(2)
+      .max(100)
+      .required()
+      .messages({
+        'any.required': 'Emergency contact name is required'
+      }),
+    emergencyContactPhone: Joi.string()
+      .pattern(/^[\d\s\-\+\(\)]+$/)
+      .required()
+      .messages({
+        'string.pattern.base': 'Please provide a valid emergency contact phone number',
+        'any.required': 'Emergency contact phone is required'
+      }),
+    emergencyContactEmail: Joi.string()
+      .email()
+      .trim()
+      .lowercase()
+      .optional()
+      .allow(''),
+    emergencyContactRelation: Joi.string()
+      .valid('spouse', 'parent', 'sibling', 'relative', 'friend', 'other')
+      .default('spouse'),
+    address: Joi.object({
+      street: Joi.string().trim().optional().allow(''),
+      city: Joi.string().trim().optional().allow(''),
+      state: Joi.string().trim().optional().allow(''),
+      zipCode: Joi.string().trim().optional().allow(''),
+      country: Joi.string().trim().default('USA')
+    }).optional(),
+    notes: Joi.string()
+      .max(500)
+      .optional()
+      .allow('')
+  }),
+
+  employeeUpdate: Joi.object({
+    firstName: Joi.string()
+      .trim()
+      .min(2)
+      .max(50)
+      .optional(),
+    lastName: Joi.string()
+      .trim()
+      .min(2)
+      .max(50)
+      .optional(),
+    email: Joi.string()
+      .email()
+      .trim()
+      .lowercase()
+      .optional()
+      .allow(''),
+    phoneNumber: Joi.string()
+      .pattern(/^[\d\s\-\+\(\)]+$/)
+      .optional()
+      .allow(''),
+    department: Joi.string()
+      .trim()
+      .uppercase()
+      .optional(),
+    position: Joi.string()
+      .trim()
+      .uppercase()
+      .optional(),
+    employeeNumber: Joi.string()
+      .trim()
+      .optional()
+      .allow(''),
+    dateOfBirth: Joi.date()
+      .max('now')
+      .optional(),
+    gender: Joi.string()
+      .valid('male', 'female', 'other')
+      .lowercase()
+      .optional(),
+    emergencyContactName: Joi.string()
+      .trim()
+      .min(2)
+      .max(100)
+      .optional(),
+    emergencyContactPhone: Joi.string()
+      .pattern(/^[\d\s\-\+\(\)]+$/)
+      .optional(),
+    emergencyContactEmail: Joi.string()
+      .email()
+      .trim()
+      .lowercase()
+      .optional()
+      .allow(''),
+    emergencyContactRelation: Joi.string()
+      .valid('spouse', 'parent', 'sibling', 'relative', 'friend', 'other')
+      .optional(),
+    address: Joi.object({
+      street: Joi.string().trim().optional().allow(''),
+      city: Joi.string().trim().optional().allow(''),
+      state: Joi.string().trim().optional().allow(''),
+      zipCode: Joi.string().trim().optional().allow(''),
+      country: Joi.string().trim().default('USA')
+    }).optional(),
+    isActive: Joi.boolean()
+      .optional(),
+    notes: Joi.string()
+      .max(500)
+      .optional()
+      .allow('')
+  }),
+
   // Attendance validation schemas
   attendanceScan: Joi.object({
     qrCode: Joi.string()

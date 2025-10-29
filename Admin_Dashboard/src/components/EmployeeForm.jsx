@@ -169,11 +169,6 @@ const EmployeeForm = ({ employee, onSubmit, onCancel }) => {
         notes: formData.notes || undefined
       };
 
-      // Only include studentId for new students (not for updates)
-      if (!isEditMode) {
-        submitData.studentId = formData.studentId;
-      }
-
       await onSubmit(submitData);
     } catch (error) {
       console.error('Form submission error:', error);

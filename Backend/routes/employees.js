@@ -243,7 +243,7 @@ router.post('/',
 // @access  Private/Manager/Admin
 router.put('/:id',
   validateObjectId('id'),
-  validate(schemas.studentUpdate),
+  validate(schemas.employeeUpdate),
   async (req, res, next) => {
     try {
       const { id } = req.params;
