@@ -58,6 +58,12 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path} - Origin: ${req.get('origin') || 'none'}`);
+  next();
+});
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
